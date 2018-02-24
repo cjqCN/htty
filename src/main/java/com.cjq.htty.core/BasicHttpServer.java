@@ -5,21 +5,40 @@ import com.cjq.htty.core.abs.HandlerContext;
 import com.cjq.htty.core.abs.HttpResourceHandler;
 import com.cjq.htty.core.abs.HttpServer;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelOption;
+import io.netty.channel.*;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.http.HttpContentCompressor;
+import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.cors.CorsConfig;
-import io.netty.util.concurrent.EventExecutorGroup;
-import io.netty.util.concurrent.ImmediateEventExecutor;
+import io.netty.handler.codec.http.cors.CorsHandler;
+import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.util.concurrent.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 class BasicHttpServer implements HttpServer {
+
+    private final static String SSL_HANDLER_NAMRE = "ssl";
+    private final static String HTTP_SERVER_CODEC_HANDLER_NAME = "serverCodec";
+    private final static String CORS_HANDLER_NAME = "cors";
+    private final static String CONTENT_COMPRESSOR_HANDLER_NAME = "compressor";
+    private final static String CHUNKED_WRITE_HANDLER = "chunkedWrite";
+    private final static String ROUTER_HANDLER_NAME = "router";
+    private final static String DISPATCHER_HANDLER_NAME = "dispatcher";
 
     private final String serverName;
     private final int bossThreadPoolSize;
@@ -40,7 +59,8 @@ class BasicHttpServer implements HttpServer {
     private volatile State state;
     private ServerBootstrap bootstrap;
     private ChannelGroup channelGroup;
-    private EventExecutorGroup eventExecutorGroup;
+    private EventExecutorGroup routerEventExecutorGroup;
+    private EventExecutorGroup execEventExecutorGroup;
     private InetSocketAddress bindAddress;
 
 
@@ -90,19 +110,41 @@ class BasicHttpServer implements HttpServer {
     @Override
     public synchronized void start() throws Exception {
         if (state == State.ALREADY) {
-            log.info("Starting HTTP Service {} at address {}", serverName, bindAddress);
-            channelGroup = new DefaultChannelGroup(ImmediateEventExecutor.INSTANCE);
-            resourceHandler.init(handlerContext);
-            eventExecutorGroup = createEventExecutorGroup(execThreadPoolSize);
-            bootstrap = createBootstrap(channelGroup);
-            Channel serverChannel = bootstrap.bind(bindAddress).sync().channel();
-            channelGroup.add(serverChannel);
+            try {
+                log.info("Starting HTTP Service {} at address {}", serverName, bindAddress);
+                channelGroup = new DefaultChannelGroup(ImmediateEventExecutor.INSTANCE);
+                resourceHandler.init(handlerContext);
+                routerEventExecutorGroup = createEventExecutorGroup(routerThreadPoolSize,
+                        execThreadKeepAliveSecs, serverName, rejectedExecutionHandler);
+                execEventExecutorGroup = createEventExecutorGroup(execThreadPoolSize,
+                        execThreadKeepAliveSecs, serverName, rejectedExecutionHandler);
+                bootstrap = createBootstrap(channelGroup);
+                Channel serverChannel = bootstrap.bind(bindAddress).sync().channel();
+                channelGroup.add(serverChannel);
 
-            bindAddress = (InetSocketAddress) serverChannel.localAddress();
+                bindAddress = (InetSocketAddress) serverChannel.localAddress();
 
-            log.debug("Started HTTP Service {} at address {}", serverName, bindAddress);
-            state = State.RUNNING;
-            return;
+                log.debug("Started HTTP Service {} at address {}", serverName, bindAddress);
+                state = State.RUNNING;
+                //sync
+                serverChannel.closeFuture().sync();
+            } catch (Throwable t) {
+                // Release resources if there is any failure
+                channelGroup.close().awaitUninterruptibly();
+                try {
+                    if (bootstrap != null) {
+                        shutdownExecutorGroups(0, 5, TimeUnit.SECONDS, bootstrap.group(),
+                                bootstrap.childGroup(), routerEventExecutorGroup, execEventExecutorGroup);
+                    } else {
+                        shutdownExecutorGroups(0, 5, TimeUnit.SECONDS,
+                                routerEventExecutorGroup, execEventExecutorGroup);
+                    }
+                } catch (Throwable t2) {
+                    t.addSuppressed(t2);
+                }
+                state = State.FAILED;
+                throw t;
+            }
         }
         if (state == State.RUNNING) {
             log.info("Ignore start() call on HTTP service {} since it has already been started.", serverName);
@@ -118,6 +160,15 @@ class BasicHttpServer implements HttpServer {
         }
     }
 
+    @Override
+    public void suspend() throws Exception {
+        throw new UnsupportedOperationException("The server does not support pauses.");
+    }
+
+    @Override
+    public void recover() throws Exception {
+        throw new UnsupportedOperationException("The server does not support recover.");
+    }
 
 
     @Override
@@ -125,15 +176,121 @@ class BasicHttpServer implements HttpServer {
 
     }
 
-    private EventExecutorGroup createEventExecutorGroup(int execThreadPoolSize) {
-        return null;
+
+    private EventExecutorGroup createEventExecutorGroup(int size, long threadKeepAliveSecs, String executorName,
+                                                        RejectedExecutionHandler rejectedExecutionHandler) {
+        if (size <= 0) {
+            return null;
+        }
+        ThreadFactory threadFactory = new ThreadFactory() {
+            private final ThreadGroup threadGroup = new ThreadGroup(serverName + "-" + executorName + "-thread");
+            private final AtomicLong count = new AtomicLong(0);
+
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(threadGroup, r, String.format("%s-" + executorName + "-%d", serverName, count.getAndIncrement()));
+                t.setDaemon(true);
+                return t;
+            }
+        };
+
+        ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(size, threadFactory,
+                rejectedExecutionHandler);
+        if (threadKeepAliveSecs > 0) {
+            executor.setKeepAliveTime(threadKeepAliveSecs, TimeUnit.SECONDS);
+            executor.allowCoreThreadTimeOut(true);
+        }
+        return new DefaultEventExecutorGroup(size, executor);
+    }
+
+    /**
+     * Creates the server bootstrap.
+     */
+    private ServerBootstrap createBootstrap(final ChannelGroup channelGroup) throws Exception {
+        EventLoopGroup bossGroup = new NioEventLoopGroup(bossThreadPoolSize,
+                new DefaultExecutorServiceFactory(serverName + "-boss-thread"));
+        EventLoopGroup workerGroup = new NioEventLoopGroup(workerThreadPoolSize,
+                new DefaultExecutorServiceFactory(serverName + "-worker-thread"));
+
+        ServerBootstrap bootstrap = new ServerBootstrap();
+        bootstrap
+                .group(bossGroup, workerGroup)
+                .channel(NioServerSocketChannel.class)
+                .childHandler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    protected void initChannel(SocketChannel ch) throws Exception {
+                        channelGroup.add(ch);
+
+                        ChannelPipeline pipeline = ch.pipeline();
+                        if (sslHandlerFactory != null) {
+                            // Add SSLHandler if SSL is enabled
+                            pipeline.addLast(SSL_HANDLER_NAMRE, sslHandlerFactory.create(ch.alloc()));
+                        }
+                        pipeline.addLast(HTTP_SERVER_CODEC_HANDLER_NAME, new HttpServerCodec());
+                        if (corsConfig != null) {
+                            pipeline.addLast(CORS_HANDLER_NAME, new CorsHandler(corsConfig));
+                        }
+                        pipeline.addLast(CONTENT_COMPRESSOR_HANDLER_NAME, new HttpContentCompressor());
+                        pipeline.addLast(CHUNKED_WRITE_HANDLER, new ChunkedWriteHandler());
+
+                        addLast(pipeline, routerEventExecutorGroup, ROUTER_HANDLER_NAME, new HttpRequestRouter());
+                        addLast(pipeline, execEventExecutorGroup, DISPATCHER_HANDLER_NAME, new HttpDispatcher());
+
+                        if (pipelineModifier != null) {
+                            pipelineModifier.modify(pipeline);
+                        }
+                    }
+                });
+
+        for (Map.Entry<ChannelOption, Object> entry : channelConfigs.entrySet()) {
+            bootstrap.option(entry.getKey(), entry.getValue());
+        }
+        for (Map.Entry<ChannelOption, Object> entry : childChannelConfigs.entrySet()) {
+            bootstrap.childOption(entry.getKey(), entry.getValue());
+        }
+
+        return bootstrap;
     }
 
 
-    private ServerBootstrap createBootstrap(ChannelGroup channelGroup) {
-        return null;
+    private void shutdownExecutorGroups(long quietPeriod, long timeout, TimeUnit unit, EventExecutorGroup... groups) {
+        Exception ex = null;
+        List<Future<?>> futures = new ArrayList<>();
+        for (EventExecutorGroup group : groups) {
+            if (group == null) {
+                continue;
+            }
+            futures.add(group.shutdownGracefully(quietPeriod, timeout, unit));
+        }
+
+        for (Future<?> future : futures) {
+            try {
+                future.syncUninterruptibly();
+            } catch (Exception e) {
+                if (ex == null) {
+                    ex = e;
+                } else {
+                    ex.addSuppressed(e);
+                }
+            }
+        }
+
+        if (ex != null) {
+            // Just log, don't rethrow since it shouldn't happen normally and
+            // there is nothing much can be done from the caller side
+            log.warn("Exception raised when shutting down executor", ex);
+        }
     }
 
+    private ChannelPipeline addLast(ChannelPipeline pipeline, EventExecutorGroup group,
+                                    String handlerName, ChannelHandler handler) {
+        if (group == null) {
+            pipeline.addLast(handlerName, handler);
+        } else {
+            pipeline.addLast(group, handlerName, handler);
+        }
+        return pipeline;
+    }
 
     public enum State {
         ALREADY,
