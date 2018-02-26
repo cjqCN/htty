@@ -1,12 +1,8 @@
 package com.cjq.htty;
 
-import com.cjq.htty.abs.HttpHandler;
-import com.cjq.htty.abs.HttpRequestRouter;
-import com.cjq.htty.abs.HttpRequester;
-import com.cjq.htty.abs.HttpResponder;
+import com.cjq.htty.abs.*;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.HttpRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,17 +18,18 @@ public class WrappedHttpRequestRouter extends ChannelHandlerAdapter implements H
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (msg instanceof HttpRequest) {
-            LOG.info(msg.toString());
-            HttpRequester requester = (HttpRequester) msg;
-
+        if (msg instanceof HttpWrapper) {
+            LOG.debug(((HttpWrapper) msg).httpRequester().toString());
+            HttpWrapper wrapper = (HttpWrapper) msg;
+            HandlerInvokeBean invokeBean = route(wrapper.httpRequester(), wrapper.httpResponder());
+            ctx.fireChannelRead(invokeBean);
         }
         ctx.fireChannelRead(msg);
     }
 
 
     @Override
-    public HttpHandler route(HttpRequester httpRequester, HttpResponder httpResponder) throws Exception {
+    public HandlerInvokeBean route(HttpRequester httpRequester, HttpResponder httpResponder) throws Exception {
         return delegate.route(httpRequester, httpResponder);
     }
 

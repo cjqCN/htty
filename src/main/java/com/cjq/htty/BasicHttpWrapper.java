@@ -16,12 +16,12 @@ public class BasicHttpWrapper implements HttpWrapper {
     }
 
     @Override
-    public HttpRequester getHttpRequester() {
+    public HttpRequester httpRequester() {
         return httpRequester;
     }
 
     @Override
-    public HttpResponder getHttpResponder() {
+    public HttpResponder httpResponder() {
         return httpResponder;
     }
 }

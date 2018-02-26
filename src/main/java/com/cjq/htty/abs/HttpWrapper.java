@@ -5,9 +5,9 @@ package com.cjq.htty.abs;
  */
 public interface HttpWrapper {
 
-    HttpRequester getHttpRequester() throws Exception;
+    HttpRequester httpRequester() throws Exception;
 
-    HttpResponder getHttpResponder() throws Exception;
+    HttpResponder httpResponder() throws Exception;
 }
 
 
