@@ -36,6 +36,7 @@ class BasicHttpServer implements HttpServer {
     private final static String CORS_HANDLER_NAME = "cors";
     private final static String CONTENT_COMPRESSOR_HANDLER_NAME = "compressor";
     private final static String CHUNKED_WRITE_HANDLER = "chunkedWrite";
+    private final static String HTTP_WRAPPED_HANDLER = "httpWrapped";
     private final static String ROUTER_HANDLER_NAME = "router";
     private final static String DISPATCHER_HANDLER_NAME = "dispatcher";
 
@@ -115,7 +116,7 @@ class BasicHttpServer implements HttpServer {
             try {
                 LOG.info("Starting HTTP Service {} at address {}", serverName, bindAddress);
                 channelGroup = new DefaultChannelGroup(ImmediateEventExecutor.INSTANCE);
-                resourceHandler.init(handlerContext);
+//                resourceHandler.init(handlerContext);
                 routerEventExecutorGroup = createEventExecutorGroup(routerThreadPoolSize,
                         routerThreadKeepAliveSecs, serverName, rejectedExecutionHandler);
                 execEventExecutorGroup = createEventExecutorGroup(execThreadPoolSize,
@@ -256,8 +257,8 @@ class BasicHttpServer implements HttpServer {
                         }
                         pipeline.addLast(CONTENT_COMPRESSOR_HANDLER_NAME, new HttpContentCompressor());
                         pipeline.addLast(CHUNKED_WRITE_HANDLER, new ChunkedWriteHandler());
-
-                        addLast(pipeline, routerEventExecutorGroup, ROUTER_HANDLER_NAME, new HttpRequestRouter());
+                        pipeline.addLast(HTTP_WRAPPED_HANDLER, new HttpWrappedHandler());
+                        addLast(pipeline, routerEventExecutorGroup, ROUTER_HANDLER_NAME, new WrappedHttpRequestRouter(null));
                         addLast(pipeline, execEventExecutorGroup, DISPATCHER_HANDLER_NAME, new HttpDispatcher());
 
                         if (pipelineModifier != null) {
