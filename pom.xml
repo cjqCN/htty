@@ -16,11 +16,8 @@
         <rs-api.version>2.0</rs-api.version>
         <netty.version>5.0.0.Alpha2</netty.version>
         <slf4j.version>1.7.25</slf4j.version>
-        <findbugs.version>2.0.1</findbugs.version>
-        <beanutils.version>1.8.3</beanutils.version>
+        <log4j.version>1.2.17</log4j.version>
         <junit.version>4.12</junit.version>
-        <logback.version>1.0.9</logback.version>
-        <gson.version>2.2.4</gson.version>
         <lombok.version>1.16.20</lombok.version>
     </properties>
 
@@ -40,11 +37,11 @@
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-        </dependency>
+        <!--<dependency>-->
+        <!--<groupId>org.projectlombok</groupId>-->
+        <!--<artifactId>lombok</artifactId>-->
+        <!--<version>${lombok.version}</version>-->
+        <!--</dependency>-->
 
         <!-- https://mvnrepository.com/artifact/junit/junit -->
         <dependency>
@@ -61,14 +58,12 @@
             <version>${slf4j.version}</version>
         </dependency>
 
-
         <!-- https://mvnrepository.com/artifact/log4j/log4j -->
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
-            <version>1.2.17</version>
+            <version>${log4j.version}</version>
         </dependency>
-
 
 
     </dependencies>

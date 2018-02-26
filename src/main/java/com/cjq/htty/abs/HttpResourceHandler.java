@@ -1,4 +1,4 @@
-package com.cjq.htty.core.abs;
+package com.cjq.htty.abs;
 
 public interface HttpResourceHandler extends HttpHandler {
 }

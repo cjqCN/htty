@@ -1,9 +1,6 @@
-package com.cjq.htty.core;
+package com.cjq.htty;
 
-import com.cjq.htty.core.abs.ChannelPipelineModifier;
-import com.cjq.htty.core.abs.HandlerContext;
-import com.cjq.htty.core.abs.HttpResourceHandler;
-import com.cjq.htty.core.abs.HttpServer;
+import com.cjq.htty.abs.*;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.group.ChannelGroup;
@@ -17,7 +14,8 @@ import io.netty.handler.codec.http.cors.CorsConfig;
 import io.netty.handler.codec.http.cors.CorsHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.concurrent.*;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -29,8 +27,9 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-@Slf4j
 class BasicHttpServer implements HttpServer {
+
+    private static final Logger LOG = LoggerFactory.getLogger(BasicHttpServer.class);
 
     private final static String SSL_HANDLER_NAMRE = "ssl";
     private final static String HTTP_SERVER_CODEC_HANDLER_NAME = "serverCodec";
@@ -45,6 +44,7 @@ class BasicHttpServer implements HttpServer {
     private final int workerThreadPoolSize;
     private final int routerThreadPoolSize;
     private final int execThreadPoolSize;
+    private final long routerThreadKeepAliveSecs;
     private final long execThreadKeepAliveSecs;
     private final Map<ChannelOption, Object> channelConfigs;
     private final Map<ChannelOption, Object> childChannelConfigs;
@@ -63,42 +63,44 @@ class BasicHttpServer implements HttpServer {
     private EventExecutorGroup execEventExecutorGroup;
     private InetSocketAddress bindAddress;
 
-
     /**
      * @param serverName
      * @param bossThreadPoolSize
      * @param workerThreadPoolSize
      * @param routerThreadPoolSize
      * @param execThreadPoolSize
+     * @param routerThreadKeepAliveSecs
      * @param execThreadKeepAliveSecs
      * @param channelConfigs
      * @param childChannelConfigs
      * @param rejectedExecutionHandler
-     * @param handlerContext
-     * @param resourceHandler
      * @param pipelineModifier
      * @param httpChunkLimit
      * @param sslHandlerFactory
      * @param corsConfig
+     * @param bindAddress
      */
-    public BasicHttpServer(final String serverName, final int bossThreadPoolSize, final int workerThreadPoolSize,
-                           final int routerThreadPoolSize, final int execThreadPoolSize, final long execThreadKeepAliveSecs,
-                           final Map<ChannelOption, Object> channelConfigs, final Map<ChannelOption, Object> childChannelConfigs,
-                           final RejectedExecutionHandler rejectedExecutionHandler, HandlerContext handlerContext,
-                           final HttpResourceHandler resourceHandler, final ChannelPipelineModifier pipelineModifier,
-                           final int httpChunkLimit, final SSLHandlerFactory sslHandlerFactory, CorsConfig corsConfig,
-                           final InetSocketAddress bindAddress) {
+    BasicHttpServer(final String serverName, final int bossThreadPoolSize, final int workerThreadPoolSize,
+                    final int routerThreadPoolSize, final int execThreadPoolSize, final long routerThreadKeepAliveSecs,
+                    final long execThreadKeepAliveSecs, final Map<ChannelOption, Object> channelConfigs,
+                    final Map<ChannelOption, Object> childChannelConfigs, final RejectedExecutionHandler rejectedExecutionHandler,
+                    final ChannelPipelineModifier pipelineModifier,
+                    Iterable<? extends HttpHandler> httpHandlers,
+                    Iterable<? extends HttpInterceptor> httpInterceptors,
+                    final int httpChunkLimit, final SSLHandlerFactory sslHandlerFactory, final CorsConfig corsConfig,
+                    final InetSocketAddress bindAddress) {
         this.serverName = serverName;
         this.bossThreadPoolSize = bossThreadPoolSize;
         this.workerThreadPoolSize = workerThreadPoolSize;
         this.routerThreadPoolSize = routerThreadPoolSize;
         this.execThreadPoolSize = execThreadPoolSize;
+        this.routerThreadKeepAliveSecs = routerThreadKeepAliveSecs;
         this.execThreadKeepAliveSecs = execThreadKeepAliveSecs;
         this.channelConfigs = channelConfigs;
         this.childChannelConfigs = childChannelConfigs;
         this.rejectedExecutionHandler = rejectedExecutionHandler;
-        this.handlerContext = handlerContext;
-        this.resourceHandler = resourceHandler;
+        this.resourceHandler = null;
+        this.handlerContext = new BasicHandlerContext(resourceHandler);
         this.pipelineModifier = pipelineModifier;
         this.httpChunkLimit = httpChunkLimit;
         this.sslHandlerFactory = sslHandlerFactory;
@@ -111,11 +113,11 @@ class BasicHttpServer implements HttpServer {
     public synchronized void start() throws Exception {
         if (state == State.ALREADY) {
             try {
-                log.info("Starting HTTP Service {} at address {}", serverName, bindAddress);
+                LOG.info("Starting HTTP Service {} at address {}", serverName, bindAddress);
                 channelGroup = new DefaultChannelGroup(ImmediateEventExecutor.INSTANCE);
                 resourceHandler.init(handlerContext);
                 routerEventExecutorGroup = createEventExecutorGroup(routerThreadPoolSize,
-                        execThreadKeepAliveSecs, serverName, rejectedExecutionHandler);
+                        routerThreadKeepAliveSecs, serverName, rejectedExecutionHandler);
                 execEventExecutorGroup = createEventExecutorGroup(execThreadPoolSize,
                         execThreadKeepAliveSecs, serverName, rejectedExecutionHandler);
                 bootstrap = createBootstrap(channelGroup);
@@ -124,7 +126,7 @@ class BasicHttpServer implements HttpServer {
 
                 bindAddress = (InetSocketAddress) serverChannel.localAddress();
 
-                log.debug("Started HTTP Service {} at address {}", serverName, bindAddress);
+                LOG.debug("Started HTTP Service {} at address {}", serverName, bindAddress);
                 state = State.RUNNING;
                 //sync
                 serverChannel.closeFuture().sync();
@@ -147,7 +149,7 @@ class BasicHttpServer implements HttpServer {
             }
         }
         if (state == State.RUNNING) {
-            log.info("Ignore start() call on HTTP service {} since it has already been started.", serverName);
+            LOG.info("Ignore start() call on HTTP service {} since it has already been started.", serverName);
             return;
         }
         if (state == State.STOPPED) {
@@ -170,10 +172,32 @@ class BasicHttpServer implements HttpServer {
         throw new UnsupportedOperationException("The server does not support recover.");
     }
 
-
     @Override
-    public void stop() throws Exception {
+    public synchronized void stop() throws Exception {
+        if (state == State.STOPPED) {
+            LOG.debug("Ignore stop() call on HTTP service {} since it has already been stopped.", serverName);
+            return;
+        }
 
+        LOG.info("Stopping HTTP Service {}", serverName);
+
+        try {
+            try {
+                channelGroup.close().awaitUninterruptibly();
+            } finally {
+                try {
+                    shutdownExecutorGroups(0, 5, TimeUnit.SECONDS,
+                            bootstrap.group(), bootstrap.childGroup(), routerEventExecutorGroup, execEventExecutorGroup);
+                } finally {
+                    resourceHandler.destroy(handlerContext);
+                }
+            }
+        } catch (Throwable t) {
+            state = State.FAILED;
+            throw t;
+        }
+        state = State.STOPPED;
+        LOG.debug("Stopped HTTP Service {} on address {}", serverName, bindAddress);
     }
 
 
@@ -278,7 +302,7 @@ class BasicHttpServer implements HttpServer {
         if (ex != null) {
             // Just log, don't rethrow since it shouldn't happen normally and
             // there is nothing much can be done from the caller side
-            log.warn("Exception raised when shutting down executor", ex);
+            LOG.warn("Exception raised when shutting down executor", ex);
         }
     }
 

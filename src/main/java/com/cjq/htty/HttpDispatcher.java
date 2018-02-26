@@ -1,4 +1,4 @@
-package com.cjq.htty.core;
+package com.cjq.htty;
 
 import io.netty.channel.ChannelHandlerAdapter;
 
