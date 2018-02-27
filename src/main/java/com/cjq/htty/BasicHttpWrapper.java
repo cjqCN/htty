@@ -6,8 +6,8 @@ import com.cjq.htty.abs.HttpWrapper;
 
 public class BasicHttpWrapper implements HttpWrapper {
 
-    private HttpRequester httpRequester;
-    private HttpResponder httpResponder;
+    private final HttpRequester httpRequester;
+    private final HttpResponder httpResponder;
 
     public BasicHttpWrapper(final HttpRequester httpRequester,
                             final HttpResponder httpResponder) {

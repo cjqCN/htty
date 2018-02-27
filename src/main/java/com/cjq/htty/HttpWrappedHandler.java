@@ -12,7 +12,7 @@ public class HttpWrappedHandler extends ChannelHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof HttpRequest) {
             HttpRequester requester = new BasicHttpRequester((HttpRequest) msg);
-            HttpResponder responder = new BasicHttpResponder(null);
+            HttpResponder responder = new BasicHttpResponder();
             ctx.fireChannelRead(new BasicHttpWrapper(requester, responder));
         }
         ctx.fireChannelRead(msg);

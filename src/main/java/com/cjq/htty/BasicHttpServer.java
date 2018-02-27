@@ -54,6 +54,7 @@ class BasicHttpServer implements HttpServer {
     private final HttpResourceHandler resourceHandler;
     private final ChannelPipelineModifier pipelineModifier;
     private final int httpChunkLimit;
+    private final ExceptionHandler exceptionHandler;
     private final SSLHandlerFactory sslHandlerFactory;
     private final CorsConfig corsConfig;
 
@@ -88,7 +89,8 @@ class BasicHttpServer implements HttpServer {
                     final ChannelPipelineModifier pipelineModifier,
                     Iterable<? extends HttpHandler> httpHandlers,
                     Iterable<? extends HttpInterceptor> httpInterceptors,
-                    final int httpChunkLimit, final SSLHandlerFactory sslHandlerFactory, final CorsConfig corsConfig,
+                    final int httpChunkLimit, final ExceptionHandler exceptionHandler,
+                    final SSLHandlerFactory sslHandlerFactory, final CorsConfig corsConfig,
                     final InetSocketAddress bindAddress) {
         this.serverName = serverName;
         this.bossThreadPoolSize = bossThreadPoolSize;
@@ -100,10 +102,11 @@ class BasicHttpServer implements HttpServer {
         this.channelConfigs = channelConfigs;
         this.childChannelConfigs = childChannelConfigs;
         this.rejectedExecutionHandler = rejectedExecutionHandler;
-        this.resourceHandler = null;
+        this.resourceHandler = new BasicHttpResourceHandler(httpHandlers, httpInterceptors);
         this.handlerContext = new BasicHandlerContext(resourceHandler);
         this.pipelineModifier = pipelineModifier;
         this.httpChunkLimit = httpChunkLimit;
+        this.exceptionHandler = exceptionHandler;
         this.sslHandlerFactory = sslHandlerFactory;
         this.corsConfig = corsConfig;
         this.bindAddress = bindAddress;
@@ -116,7 +119,7 @@ class BasicHttpServer implements HttpServer {
             try {
                 LOG.info("Starting HTTP Service {} at address {}", serverName, bindAddress);
                 channelGroup = new DefaultChannelGroup(ImmediateEventExecutor.INSTANCE);
-//                resourceHandler.init(handlerContext);
+                resourceHandler.init(handlerContext);
                 routerEventExecutorGroup = createEventExecutorGroup(routerThreadPoolSize,
                         routerThreadKeepAliveSecs, serverName, rejectedExecutionHandler);
                 execEventExecutorGroup = createEventExecutorGroup(execThreadPoolSize,
@@ -258,8 +261,8 @@ class BasicHttpServer implements HttpServer {
                         pipeline.addLast(CONTENT_COMPRESSOR_HANDLER_NAME, new HttpContentCompressor());
                         pipeline.addLast(CHUNKED_WRITE_HANDLER, new ChunkedWriteHandler());
                         pipeline.addLast(HTTP_WRAPPED_HANDLER, new HttpWrappedHandler());
-                        addLast(pipeline, routerEventExecutorGroup, ROUTER_HANDLER_NAME, new WrappedHttpRequestRouter(null));
-                        addLast(pipeline, execEventExecutorGroup, DISPATCHER_HANDLER_NAME, new HttpDispatcher());
+                        addLast(pipeline, routerEventExecutorGroup, ROUTER_HANDLER_NAME, new HttpRequestRouterHandler(null));
+                        addLast(pipeline, execEventExecutorGroup, DISPATCHER_HANDLER_NAME, new HttpDispatcherHandler());
 
                         if (pipelineModifier != null) {
                             pipelineModifier.modify(pipeline);

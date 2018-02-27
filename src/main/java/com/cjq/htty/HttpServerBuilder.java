@@ -55,9 +55,9 @@ public class HttpServerBuilder {
     }
 
     /**
-     * Create a buider of <code>HttpServer</code>
+     * Create a buider of {@link HttpServer}
      *
-     * @param serverName Name of <code>HttpServer</code>
+     * @param serverName Name of {@link HttpServer}
      */
     public HttpServerBuilder(String serverName) {
         this.serverName = serverName;
@@ -190,9 +190,9 @@ public class HttpServerBuilder {
     }
 
     /**
-     * Build a HttpServer with pre-setting
+     * Build a {@link HttpServer} with pre-setting
      *
-     * @return instance of {@code HttpServer}
+     * @return instance of {@link HttpServer}
      */
     public HttpServer build() {
         InetSocketAddress bindAddress;
@@ -205,8 +205,8 @@ public class HttpServerBuilder {
                 routerThreadPoolSize, execThreadPoolSize, routerThreadKeepAliveSecs,
                 execThreadKeepAliveSecs, channelConfigs, childChannelConfigs,
                 rejectedExecutionHandler, pipelineModifier, httpHandlers,
-                httpInterceptors, httpChunkLimit, sslHandlerFactory,
-                corsConfig, bindAddress);
+                httpInterceptors, httpChunkLimit, exceptionHandler,
+                sslHandlerFactory, corsConfig, bindAddress);
     }
 
 

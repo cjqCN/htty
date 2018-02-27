@@ -6,21 +6,21 @@ import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WrappedHttpRequestRouter extends ChannelHandlerAdapter implements HttpRequestRouter {
+public class HttpRequestRouterHandler extends ChannelHandlerAdapter implements HttpRequestRouter {
 
-    private static final Logger LOG = LoggerFactory.getLogger(WrappedHttpRequestRouter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpRequestRouterHandler.class);
 
     private HttpRequestRouter delegate;
 
-    public WrappedHttpRequestRouter(HttpRequestRouter delegate) {
+    public HttpRequestRouterHandler(HttpRequestRouter delegate) {
         this.delegate = delegate;
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof HttpWrapper) {
-            LOG.debug(((HttpWrapper) msg).httpRequester().toString());
             HttpWrapper wrapper = (HttpWrapper) msg;
+            LOG.debug(wrapper.httpRequester().toString());
             HandlerInvokeBean invokeBean = route(wrapper.httpRequester(), wrapper.httpResponder());
             ctx.fireChannelRead(invokeBean);
         }
