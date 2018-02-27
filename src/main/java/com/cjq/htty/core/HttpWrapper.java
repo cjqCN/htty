@@ -1,4 +1,4 @@
-package com.cjq.htty.abs;
+package com.cjq.htty.core;
 
 /**
  * @author jqChan

@@ -1,7 +1,7 @@
 package com.cjq.htty;
 
-import com.cjq.htty.abs.HandlerContext;
-import com.cjq.htty.abs.HttpResourceHandler;
+import com.cjq.htty.core.HandlerContext;
+import com.cjq.htty.core.HttpResourceHandler;
 
 public class BasicHandlerContext implements HandlerContext {
 

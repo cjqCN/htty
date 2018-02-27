@@ -1,8 +1,8 @@
 package com.cjq.htty;
 
-import com.cjq.htty.abs.HttpRequester;
-import com.cjq.htty.abs.HttpResponder;
-import com.cjq.htty.abs.HttpWrapper;
+import com.cjq.htty.core.HttpRequester;
+import com.cjq.htty.core.HttpResponder;
+import com.cjq.htty.core.HttpWrapper;
 
 public class BasicHttpWrapper implements HttpWrapper {
 

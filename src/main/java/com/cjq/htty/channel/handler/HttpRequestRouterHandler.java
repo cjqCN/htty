@@ -1,6 +1,6 @@
-package com.cjq.htty;
+package com.cjq.htty.channel.handler;
 
-import com.cjq.htty.abs.*;
+import com.cjq.htty.core.*;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
@@ -18,9 +18,9 @@ public class HttpRequestRouterHandler extends ChannelHandlerAdapter implements H
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        LOG.debug("--> HttpRequestRouterHandler");
         if (msg instanceof HttpWrapper) {
             HttpWrapper wrapper = (HttpWrapper) msg;
-            LOG.debug(wrapper.httpRequester().toString());
             HandlerInvokeBean invokeBean = route(wrapper.httpRequester(), wrapper.httpResponder());
             ctx.fireChannelRead(invokeBean);
         }

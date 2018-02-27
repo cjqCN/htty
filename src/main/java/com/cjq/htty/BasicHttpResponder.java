@@ -1,26 +1,11 @@
-/*
- * Copyright © 2017 Cask Data, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
-
 package com.cjq.htty;
 
-
-import com.cjq.htty.abs.AbstractHttpResponder;
-import com.cjq.htty.abs.BodyProducer;
-import com.cjq.htty.abs.ChunkResponder;
-import com.cjq.htty.abs.HttpResponder;
+import com.cjq.htty.core.AbstractHttpResponder;
+import com.cjq.htty.core.BodyProducer;
+import com.cjq.htty.core.ChunkResponder;
+import com.cjq.htty.core.HttpResponder;
+import com.cjq.htty.util.HttpUtils;
+import com.sun.istack.internal.Nullable;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
@@ -40,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Basic implementation of {@link HttpResponder} that uses {@link Channel} to write back to client.
  */
-final class BasicHttpResponder extends AbstractHttpResponder {
+public final class BasicHttpResponder extends AbstractHttpResponder {
 
   private static final Logger LOG = LoggerFactory.getLogger(BasicHttpResponder.class);
 
@@ -48,7 +33,7 @@ final class BasicHttpResponder extends AbstractHttpResponder {
   private final AtomicBoolean responded;
   private final boolean sslEnabled;
 
-  BasicHttpResponder(Channel channel, boolean sslEnabled) {
+  public BasicHttpResponder(Channel channel, boolean sslEnabled) {
     this.channel = channel;
     this.responded = new AtomicBoolean(false);
     this.sslEnabled = sslEnabled;
@@ -58,14 +43,14 @@ final class BasicHttpResponder extends AbstractHttpResponder {
   public ChunkResponder sendChunkStart(HttpResponseStatus status, HttpHeaders headers) {
     if (status.code() < 200 || status.code() >= 210) {
       throw new IllegalArgumentException("Status code must be between 200 and 210. Status code provided is "
-                                           + status.code());
+              + status.code());
     }
 
     HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
     addContentTypeIfMissing(response.headers().add(headers), OCTET_STREAM_TYPE);
 
-    if (HttpUtil.getContentLength(response, -1L) < 0) {
-      HttpUtil.setTransferEncodingChunked(response, true);
+    if (HttpUtils.getContentLength(response, -1L) < 0) {
+      HttpUtils.setTransferEncodingChunked(response, true);
     }
 
     checkNotResponded();
@@ -77,7 +62,9 @@ final class BasicHttpResponder extends AbstractHttpResponder {
   public void sendContent(HttpResponseStatus status, ByteBuf content, HttpHeaders headers) {
     FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, content);
     response.headers().add(headers);
-    HttpUtil.setContentLength(response, content.readableBytes());
+    HttpUtils.setContentLength(response, content.readableBytes());
+
+    response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, content.readableBytes());
 
     if (content.isReadable()) {
       addContentTypeIfMissing(response.headers(), OCTET_STREAM_TYPE);
@@ -92,8 +79,8 @@ final class BasicHttpResponder extends AbstractHttpResponder {
     HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
     addContentTypeIfMissing(response.headers().add(headers), OCTET_STREAM_TYPE);
 
-    HttpUtil.setTransferEncodingChunked(response, false);
-    HttpUtil.setContentLength(response, file.length());
+    HttpUtils.setTransferEncodingChunked(response, false);
+    HttpUtils.setContentLength(response, file.length());
 
     // Open the file first to make sure it is readable before sending out the response
     RandomAccessFile raf = new RandomAccessFile(file, "r");
@@ -134,11 +121,11 @@ final class BasicHttpResponder extends AbstractHttpResponder {
       bodyProducer.handleError(t);
       // Response with error and close the connection
       sendContent(
-        HttpResponseStatus.INTERNAL_SERVER_ERROR,
-        Unpooled.copiedBuffer("Failed to determined content length. Cause: " + t.getMessage(), StandardCharsets.UTF_8),
-        new DefaultHttpHeaders()
-          .set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE)
-          .set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=utf-8"));
+              HttpResponseStatus.INTERNAL_SERVER_ERROR,
+              Unpooled.copiedBuffer("Failed to determined content length. Cause: " + t.getMessage(), StandardCharsets.UTF_8),
+              new DefaultHttpHeaders()
+                      .set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE)
+                      .set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=utf-8"));
       return;
     }
 
@@ -146,10 +133,10 @@ final class BasicHttpResponder extends AbstractHttpResponder {
     addContentTypeIfMissing(response.headers().add(headers), OCTET_STREAM_TYPE);
 
     if (contentLength < 0L) {
-      HttpUtil.setTransferEncodingChunked(response, true);
+      HttpUtils.setTransferEncodingChunked(response, true);
     } else {
-      HttpUtil.setTransferEncodingChunked(response, false);
-      HttpUtil.setContentLength(response, contentLength);
+      HttpUtils.setTransferEncodingChunked(response, false);
+      HttpUtils.setContentLength(response, contentLength);
     }
 
     checkNotResponded();
@@ -165,7 +152,7 @@ final class BasicHttpResponder extends AbstractHttpResponder {
           return;
         }
         channel.writeAndFlush(new HttpChunkedInput(new BodyProducerChunkedInput(bodyProducer, contentLength)))
-          .addListener(createBodyProducerCompletionListener(bodyProducer));
+                .addListener(createBodyProducerCompletionListener(bodyProducer));
       }
     });
   }
@@ -197,7 +184,7 @@ final class BasicHttpResponder extends AbstractHttpResponder {
     };
   }
 
-  private void callBodyProducerHandleError(BodyProducer bodyProducer, Throwable failureCause) {
+  private void callBodyProducerHandleError(BodyProducer bodyProducer, @Nullable Throwable failureCause) {
     try {
       bodyProducer.handleError(failureCause);
     } catch (Throwable t) {
@@ -239,7 +226,7 @@ final class BasicHttpResponder extends AbstractHttpResponder {
       completed = !nextChunk.isReadable();
       if (completed && length >= 0 && bytesProduced != length) {
         throw new IllegalStateException("Body size doesn't match with content length. " +
-                                          "Content-Length: " + length + ", bytes produced: " + bytesProduced);
+                "Content-Length: " + length + ", bytes produced: " + bytesProduced);
       }
 
       return completed;
@@ -255,7 +242,6 @@ final class BasicHttpResponder extends AbstractHttpResponder {
       return readChunk(ctx.alloc());
     }
 
-    @Override
     public ByteBuf readChunk(ByteBufAllocator allocator) throws Exception {
       if (isEndOfInput()) {
         // This shouldn't happen, but just to guard

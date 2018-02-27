@@ -1,6 +1,10 @@
 package com.cjq.htty;
 
-import com.cjq.htty.abs.*;
+import com.cjq.htty.channel.handler.URLRewriterHandler;
+import com.cjq.htty.core.*;
+import com.cjq.htty.channel.handler.HttpDispatcherHandler;
+import com.cjq.htty.channel.handler.HttpRequestRouterHandler;
+import com.cjq.htty.channel.handler.HttpWrappedHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.group.ChannelGroup;
@@ -37,6 +41,7 @@ class BasicHttpServer implements HttpServer {
     private final static String CONTENT_COMPRESSOR_HANDLER_NAME = "compressor";
     private final static String CHUNKED_WRITE_HANDLER = "chunkedWrite";
     private final static String HTTP_WRAPPED_HANDLER = "httpWrapped";
+    private final static String URL_REWRITER_HANDLER = "urlRewriter";
     private final static String ROUTER_HANDLER_NAME = "router";
     private final static String DISPATCHER_HANDLER_NAME = "dispatcher";
 
@@ -54,6 +59,7 @@ class BasicHttpServer implements HttpServer {
     private final HttpResourceHandler resourceHandler;
     private final ChannelPipelineModifier pipelineModifier;
     private final int httpChunkLimit;
+    private final URLRewriter urlRewriter;
     private final ExceptionHandler exceptionHandler;
     private final SSLHandlerFactory sslHandlerFactory;
     private final CorsConfig corsConfig;
@@ -66,6 +72,7 @@ class BasicHttpServer implements HttpServer {
     private InetSocketAddress bindAddress;
 
     /**
+     *
      * @param serverName
      * @param bossThreadPoolSize
      * @param workerThreadPoolSize
@@ -77,10 +84,14 @@ class BasicHttpServer implements HttpServer {
      * @param childChannelConfigs
      * @param rejectedExecutionHandler
      * @param pipelineModifier
+     * @param httpHandlers
+     * @param httpInterceptors
      * @param httpChunkLimit
+     * @param exceptionHandler
      * @param sslHandlerFactory
      * @param corsConfig
      * @param bindAddress
+     * @param urlRewriter
      */
     BasicHttpServer(final String serverName, final int bossThreadPoolSize, final int workerThreadPoolSize,
                     final int routerThreadPoolSize, final int execThreadPoolSize, final long routerThreadKeepAliveSecs,
@@ -91,7 +102,7 @@ class BasicHttpServer implements HttpServer {
                     Iterable<? extends HttpInterceptor> httpInterceptors,
                     final int httpChunkLimit, final ExceptionHandler exceptionHandler,
                     final SSLHandlerFactory sslHandlerFactory, final CorsConfig corsConfig,
-                    final InetSocketAddress bindAddress) {
+                    final InetSocketAddress bindAddress, final URLRewriter urlRewriter) {
         this.serverName = serverName;
         this.bossThreadPoolSize = bossThreadPoolSize;
         this.workerThreadPoolSize = workerThreadPoolSize;
@@ -104,6 +115,7 @@ class BasicHttpServer implements HttpServer {
         this.rejectedExecutionHandler = rejectedExecutionHandler;
         this.resourceHandler = new BasicHttpResourceHandler(httpHandlers, httpInterceptors);
         this.handlerContext = new BasicHandlerContext(resourceHandler);
+        this.urlRewriter = urlRewriter;
         this.pipelineModifier = pipelineModifier;
         this.httpChunkLimit = httpChunkLimit;
         this.exceptionHandler = exceptionHandler;
@@ -121,9 +133,9 @@ class BasicHttpServer implements HttpServer {
                 channelGroup = new DefaultChannelGroup(ImmediateEventExecutor.INSTANCE);
                 resourceHandler.init(handlerContext);
                 routerEventExecutorGroup = createEventExecutorGroup(routerThreadPoolSize,
-                        routerThreadKeepAliveSecs, serverName, rejectedExecutionHandler);
+                        routerThreadKeepAliveSecs, "router", rejectedExecutionHandler);
                 execEventExecutorGroup = createEventExecutorGroup(execThreadPoolSize,
-                        execThreadKeepAliveSecs, serverName, rejectedExecutionHandler);
+                        execThreadKeepAliveSecs, "exec", rejectedExecutionHandler);
                 bootstrap = createBootstrap(channelGroup);
                 Channel serverChannel = bootstrap.bind(bindAddress).sync().channel();
                 channelGroup.add(serverChannel);
@@ -261,7 +273,9 @@ class BasicHttpServer implements HttpServer {
                         pipeline.addLast(CONTENT_COMPRESSOR_HANDLER_NAME, new HttpContentCompressor());
                         pipeline.addLast(CHUNKED_WRITE_HANDLER, new ChunkedWriteHandler());
                         pipeline.addLast(HTTP_WRAPPED_HANDLER, new HttpWrappedHandler());
-                        addLast(pipeline, routerEventExecutorGroup, ROUTER_HANDLER_NAME, new HttpRequestRouterHandler(null));
+                        pipeline.addLast(URL_REWRITER_HANDLER, new URLRewriterHandler(urlRewriter));
+
+                        addLast(pipeline, routerEventExecutorGroup, ROUTER_HANDLER_NAME, new HttpRequestRouterHandler(createHttpRequestRouter()));
                         addLast(pipeline, execEventExecutorGroup, DISPATCHER_HANDLER_NAME, new HttpDispatcherHandler());
 
                         if (pipelineModifier != null) {
@@ -308,6 +322,10 @@ class BasicHttpServer implements HttpServer {
             // there is nothing much can be done from the caller side
             LOG.warn("Exception raised when shutting down executor", ex);
         }
+    }
+
+    private HttpRequestRouter createHttpRequestRouter() throws Exception {
+        return new BasicHttpRequestRouter(resourceHandler);
     }
 
     private ChannelPipeline addLast(ChannelPipeline pipeline, EventExecutorGroup group,

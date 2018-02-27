@@ -1,9 +1,9 @@
 package com.cjq.htty;
 
-import com.cjq.htty.abs.HandlerContext;
-import com.cjq.htty.abs.HttpHandler;
-import com.cjq.htty.abs.HttpInterceptor;
-import com.cjq.htty.abs.HttpResourceHandler;
+import com.cjq.htty.core.HandlerContext;
+import com.cjq.htty.core.HttpHandler;
+import com.cjq.htty.core.HttpInterceptor;
+import com.cjq.htty.core.HttpResourceHandler;
 
 public class BasicHttpResourceHandler implements HttpResourceHandler {
 

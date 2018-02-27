@@ -1,10 +1,12 @@
 package com.cjq.htty;
 
-import com.cjq.htty.abs.*;
+import com.cjq.htty.core.*;
 import io.netty.channel.ChannelOption;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.cors.CorsConfig;
 
 import java.net.InetSocketAddress;
+import java.net.URL;
 import java.util.*;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -34,7 +36,7 @@ public class HttpServerBuilder {
 
     private Collection<HttpHandler> httpHandlers;
     private Collection<HttpInterceptor> httpInterceptors;
-    private URLRewriter urlRewriter = null;
+    private URLRewriter urlRewriter;
     private int bossThreadPoolSize;
     private int workerThreadPoolSize;
     private int routerThreadPoolSize;
@@ -75,16 +77,16 @@ public class HttpServerBuilder {
         channelConfigs = new HashMap<>();
         childChannelConfigs = new HashMap<>();
         channelConfigs.put(ChannelOption.SO_BACKLOG, DEFAULT_CONNECTION_BACKLOG);
+        urlRewriter = null;
         sslHandlerFactory = null;
         corsConfig = null;
         exceptionHandler = new ExceptionHandler() {
             @Override
-            public void handle(Throwable t, HttpRequester requester, HttpResponder responder) throws Throwable {
-                throw t;
+            public void handle(Exception ex, HttpRequester requester, HttpResponder responder) throws Exception {
+                responder.sendStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
             }
         };
     }
-
 
     public HttpServerBuilder addHttpHandler(HttpHandler... _httpHandlers) {
         if (_httpHandlers != null)
@@ -184,6 +186,11 @@ public class HttpServerBuilder {
         return this;
     }
 
+    public HttpServerBuilder setUrlRewriter(URLRewriter urlRewriter) {
+        this.urlRewriter = urlRewriter;
+        return this;
+    }
+
     public HttpServerBuilder setCorsConfig(CorsConfig corsConfig) {
         this.corsConfig = corsConfig;
         return this;
@@ -206,7 +213,7 @@ public class HttpServerBuilder {
                 execThreadKeepAliveSecs, channelConfigs, childChannelConfigs,
                 rejectedExecutionHandler, pipelineModifier, httpHandlers,
                 httpInterceptors, httpChunkLimit, exceptionHandler,
-                sslHandlerFactory, corsConfig, bindAddress);
+                sslHandlerFactory, corsConfig, bindAddress, urlRewriter);
     }
 
 

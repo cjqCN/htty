@@ -14,7 +14,7 @@
  * the License.
  */
 
-package com.cjq.htty.abs;
+package com.cjq.htty.core;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpHeaders;
