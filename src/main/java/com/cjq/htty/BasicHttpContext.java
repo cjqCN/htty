@@ -2,14 +2,14 @@ package com.cjq.htty;
 
 import com.cjq.htty.core.HttpRequester;
 import com.cjq.htty.core.HttpResponder;
-import com.cjq.htty.core.HttpWrapper;
+import com.cjq.htty.core.HttpContext;
 
-public class BasicHttpWrapper implements HttpWrapper {
+public class BasicHttpContext implements HttpContext {
 
     private final HttpRequester httpRequester;
     private final HttpResponder httpResponder;
 
-    public BasicHttpWrapper(final HttpRequester httpRequester,
+    public BasicHttpContext(final HttpRequester httpRequester,
                             final HttpResponder httpResponder) {
         this.httpRequester = httpRequester;
         this.httpResponder = httpResponder;

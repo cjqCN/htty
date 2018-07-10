@@ -3,7 +3,7 @@ package com.cjq.htty.core;
 /**
  * @author jqChan
  */
-public interface HttpWrapper {
+public interface HttpContext {
 
     /**
      * Returns {@link HttpRequester} in this.

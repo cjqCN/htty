@@ -1,5 +1,11 @@
 package com.cjq.htty.core;
 
 public interface URLRewriter {
-    boolean rewrite(HttpRequester requester, HttpResponder responder) throws Exception;
+	/**
+	 *
+	 * @param httpContext
+	 * @return
+	 * @throws Exception
+	 */
+	boolean rewrite(HttpContext httpContext) throws Exception;
 }

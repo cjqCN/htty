@@ -4,27 +4,27 @@ import com.cjq.htty.core.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BasicHttpRequestRouter implements HttpRequestRouter {
+public class BasicHttpRouter implements HttpRouter {
 
-    private static final Logger LOG = LoggerFactory.getLogger(BasicHttpRequestRouter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BasicHttpRouter.class);
 
     private final HttpResourceHandler httpResourceHandler;
     private final Iterable<? extends HttpHandler> httpHandlers;
     private final Iterable<? extends HttpInterceptor> httpInterceptors;
 
-    BasicHttpRequestRouter(final HttpResourceHandler httpResourceHandler) throws Exception {
+    BasicHttpRouter(final HttpResourceHandler httpResourceHandler) throws Exception {
         this.httpResourceHandler = httpResourceHandler;
         this.httpHandlers = httpResourceHandler.getHttpHandlers();
         this.httpInterceptors = httpResourceHandler.getHttpInterceptors();
     }
 
     @Override
-    public HandlerInvokeBean route(HttpRequester httpRequester, HttpResponder httpResponder) throws Exception {
+    public HandlerInvokeBean route(HttpContext httpContext) throws Exception {
         if (!checkHasHttpHandlers()) {
-            return new NotFoundHandlerInvokeBean(httpRequester, httpResponder);
+            return new NotFoundHandlerInvokeBean(httpContext);
         }
         // TODO
-        return new NotFoundHandlerInvokeBean(httpRequester, httpResponder);
+        return new NotFoundHandlerInvokeBean(httpContext);
     }
 
     private boolean checkHasHttpHandlers() {
