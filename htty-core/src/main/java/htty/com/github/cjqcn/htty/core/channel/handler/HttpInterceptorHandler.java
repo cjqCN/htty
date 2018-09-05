@@ -17,42 +17,43 @@ import java.util.LinkedList;
 public class HttpInterceptorHandler extends SimpleChannelInboundHandler<HttpContext> implements HttpInterceptor {
 
 
-    private static final Logger LOG = LoggerFactory.getLogger(HttpRouterHandler.class);
+	private static final Logger LOG = LoggerFactory.getLogger(HttpRouterHandler.class);
 
-    private HttpInterceptor delegate;
+	private HttpInterceptor delegate;
 
-    public HttpInterceptorHandler(HttpInterceptor delegate) {
-        this.delegate = delegate;
-    }
+	public HttpInterceptorHandler(HttpInterceptor delegate) {
+		this.delegate = delegate;
+	}
 
-    @Override
-    public boolean preHandle(HttpContext httpContext, Object handler) throws Exception {
-        if (delegateIsNull()) {
-            return true;
-        }
-        return delegate.preHandle(httpContext, handler);
-    }
+	@Override
+	public boolean preHandle(HttpContext httpContext, Object handler) throws Exception {
+		if (delegateIsNull()) {
+			return true;
+		}
+		return delegate.preHandle(httpContext, handler);
+	}
 
-    @Override
-    public void postHandle(HttpContext httpContext, Object handler, Object msg) throws Exception {
-        if (!delegateIsNull()) {
-            delegate.postHandle(httpContext, handler, msg);
-        }
-    }
+	@Override
+	public void postHandle(HttpContext httpContext, Object handler, Object msg) throws Exception {
+		if (!delegateIsNull()) {
+			delegate.postHandle(httpContext, handler, msg);
+		}
+	}
 
-    @Override
-    public void afterCompletion(HttpContext httpContext, Object handler, Exception ex) throws Exception {
-        if (!delegateIsNull()) {
-            delegate.afterCompletion(httpContext, handler, ex);
-        }
-    }
+	@Override
+	public void afterCompletion(HttpContext httpContext, Object handler, Exception ex) throws Exception {
+		if (!delegateIsNull()) {
+			delegate.afterCompletion(httpContext, handler, ex);
+		}
+	}
 
-    @Override
-    protected void messageReceived(ChannelHandlerContext channelHandlerContext, HttpContext httpContext) throws Exception {
+	@Override
+	protected void messageReceived(ChannelHandlerContext channelHandlerContext, HttpContext httpContext) throws
+			Exception {
 
-    }
+	}
 
-    private boolean delegateIsNull() {
-        return delegate == null;
-    }
+	private boolean delegateIsNull() {
+		return delegate == null;
+	}
 }

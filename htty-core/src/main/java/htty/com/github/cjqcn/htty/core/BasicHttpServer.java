@@ -279,7 +279,8 @@ class BasicHttpServer implements HttpServer {
 
 						addLast(pipeline, routerEventExecutorGroup, ROUTER_HANDLER_NAME, new HttpRouterHandler
 								(createHttpRequestRouter()));
-						addLast(pipeline, execEventExecutorGroup, DISPATCHER_HANDLER_NAME, new HttpDispatcherHandler());
+						addLast(pipeline, execEventExecutorGroup, DISPATCHER_HANDLER_NAME, new HttpDispatcherHandler
+								());
 
 						if (pipelineModifier != null) {
 							pipelineModifier.modify(pipeline);

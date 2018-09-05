@@ -25,8 +25,8 @@ public class URLRewriterHandler extends SimpleChannelInboundHandler<HttpContext>
 	/**
 	 * Is called for each message of type {@link HttpContext}.
 	 *
-	 * @param ctx the {@link ChannelHandlerContext} which this {@link SimpleChannelInboundHandler}
-	 *               belongs to
+	 * @param ctx         the {@link ChannelHandlerContext} which this {@link SimpleChannelInboundHandler}
+	 *                    belongs to
 	 * @param httpContext the message to handle
 	 * @throws Exception is thrown if an error occurred
 	 */

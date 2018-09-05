@@ -6,14 +6,14 @@ import htty.com.github.cjqcn.htty.core.abs.HttpResourceHolder;
 
 public class BasicHandlerContext implements HandlerContext {
 
-    private final HttpResourceHolder httpResourceHolder;
+	private final HttpResourceHolder httpResourceHolder;
 
-    public BasicHandlerContext(HttpResourceHolder httpResourceHolder) {
-        this.httpResourceHolder = httpResourceHolder;
-    }
+	public BasicHandlerContext(HttpResourceHolder httpResourceHolder) {
+		this.httpResourceHolder = httpResourceHolder;
+	}
 
-    @Override
-    public HttpResourceHolder getHttpResourceHolder() {
-        return httpResourceHolder;
-    }
+	@Override
+	public HttpResourceHolder getHttpResourceHolder() {
+		return httpResourceHolder;
+	}
 }

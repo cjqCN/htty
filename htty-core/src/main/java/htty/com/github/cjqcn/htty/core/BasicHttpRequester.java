@@ -4,7 +4,7 @@ import htty.com.github.cjqcn.htty.core.abs.AbstractHttpRequester;
 import io.netty.handler.codec.http.HttpRequest;
 
 public class BasicHttpRequester extends AbstractHttpRequester {
-    public BasicHttpRequester(HttpRequest httpRequest) {
-        super(httpRequest);
-    }
+	public BasicHttpRequester(HttpRequest httpRequest) {
+		super(httpRequest);
+	}
 }

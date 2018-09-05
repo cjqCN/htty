@@ -6,29 +6,29 @@ import org.slf4j.LoggerFactory;
 
 public class BasicHttpRouter implements HttpRouter {
 
-    private static final Logger LOG = LoggerFactory.getLogger(BasicHttpRouter.class);
+	private static final Logger LOG = LoggerFactory.getLogger(BasicHttpRouter.class);
 
-    private final HttpResourceHolder httpResourceHolder;
-    private final Iterable<? extends HttpHandler> httpHandlers;
-    private final Iterable<? extends HttpInterceptor> httpInterceptors;
+	private final HttpResourceHolder httpResourceHolder;
+	private final Iterable<? extends HttpHandler> httpHandlers;
+	private final Iterable<? extends HttpInterceptor> httpInterceptors;
 
-    BasicHttpRouter(final HttpResourceHolder httpResourceHolder) throws Exception {
-        this.httpResourceHolder = httpResourceHolder;
-        this.httpHandlers = httpResourceHolder.getHttpHandlers();
-        this.httpInterceptors = httpResourceHolder.getHttpInterceptors();
-    }
+	BasicHttpRouter(final HttpResourceHolder httpResourceHolder) throws Exception {
+		this.httpResourceHolder = httpResourceHolder;
+		this.httpHandlers = httpResourceHolder.getHttpHandlers();
+		this.httpInterceptors = httpResourceHolder.getHttpInterceptors();
+	}
 
-    @Override
-    public HandlerInvokeBean route(HttpContext httpContext) throws Exception {
-        if (!checkHasHttpHandlers()) {
-            return new NotFoundHandlerInvokeBean(httpContext);
-        }
-        // TODO
-        return new NotFoundHandlerInvokeBean(httpContext);
-    }
+	@Override
+	public HandlerInvokeBean route(HttpContext httpContext) throws Exception {
+		if (!checkHasHttpHandlers()) {
+			return new NotFoundHandlerInvokeBean(httpContext);
+		}
+		// TODO
+		return new NotFoundHandlerInvokeBean(httpContext);
+	}
 
-    private boolean checkHasHttpHandlers() {
-        return httpHandlers != null;
-    }
+	private boolean checkHasHttpHandlers() {
+		return httpHandlers != null;
+	}
 
 }
