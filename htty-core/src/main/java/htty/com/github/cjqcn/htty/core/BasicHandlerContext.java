@@ -2,18 +2,18 @@ package htty.com.github.cjqcn.htty.core;
 
 
 import htty.com.github.cjqcn.htty.core.abs.HandlerContext;
-import htty.com.github.cjqcn.htty.core.abs.HttpResourceHolder;
+import htty.com.github.cjqcn.htty.core.abs.HttyResourceHolder;
 
 public class BasicHandlerContext implements HandlerContext {
 
-	private final HttpResourceHolder httpResourceHolder;
+	private final HttyResourceHolder httpResourceHolder;
 
-	public BasicHandlerContext(HttpResourceHolder httpResourceHolder) {
+	public BasicHandlerContext(HttyResourceHolder httpResourceHolder) {
 		this.httpResourceHolder = httpResourceHolder;
 	}
 
 	@Override
-	public HttpResourceHolder getHttpResourceHolder() {
+	public HttyResourceHolder getHttyResourceHolder() {
 		return httpResourceHolder;
 	}
 }

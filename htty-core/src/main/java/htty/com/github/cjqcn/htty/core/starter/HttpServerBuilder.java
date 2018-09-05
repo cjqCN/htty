@@ -1,5 +1,6 @@
-package htty.com.github.cjqcn.htty.core;
+package htty.com.github.cjqcn.htty.core.starter;
 
+import htty.com.github.cjqcn.htty.core.SSLHandlerFactory;
 import htty.com.github.cjqcn.htty.core.abs.*;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -32,15 +33,17 @@ public class HttpServerBuilder {
 	private static final RejectedExecutionHandler DEFAULT_REJECTED_EXECUTION_HANDLER =
 			new ThreadPoolExecutor.CallerRunsPolicy();
 
+	/**
+	 * 150M
+	 */
 	private static final int DEFAULT_HTTP_CHUNK_LIMIT = 150 * 1024 * 1024;
 
 	private final String serverName;
 	private final Map<ChannelOption, Object> channelConfigs;
 	private final Map<ChannelOption, Object> childChannelConfigs;
 
-	private Collection<HttpHandler> httpHandlers;
-	private Collection<HttpInterceptor> httpInterceptors;
-	private URLRewriter urlRewriter;
+	private Collection<HttyHandler> httyHandlers;
+	private Collection<HttyInterceptor> httyInterceptors;
 	private int bossThreadPoolSize;
 	private int workerThreadPoolSize;
 	private int routerThreadPoolSize;
@@ -61,9 +64,9 @@ public class HttpServerBuilder {
 	}
 
 	/**
-	 * Create a buider of {@link HttpServer}
+	 * Create a buider of {@link HttyServer}
 	 *
-	 * @param serverName Name of {@link HttpServer}
+	 * @param serverName Name of {@link HttyServer}
 	 */
 	public HttpServerBuilder(String serverName) {
 		this.serverName = serverName;
@@ -76,49 +79,46 @@ public class HttpServerBuilder {
 		rejectedExecutionHandler = DEFAULT_REJECTED_EXECUTION_HANDLER;
 		httpChunkLimit = DEFAULT_HTTP_CHUNK_LIMIT;
 		port = DEFAULT_SERVER_PORT;
-		httpHandlers = new ArrayList<>();
-		httpInterceptors = new ArrayList<>();
+		httyHandlers = new ArrayList<>();
+		httyInterceptors = new ArrayList<>();
 		channelConfigs = new HashMap<>();
 		childChannelConfigs = new HashMap<>();
 		channelConfigs.put(ChannelOption.SO_BACKLOG, DEFAULT_CONNECTION_BACKLOG);
-		urlRewriter = null;
 		sslHandlerFactory = null;
 		corsConfig = null;
 		exceptionHandler = new ExceptionHandler() {
 			@Override
-			public void handle(Exception ex, HttpContext httpContext) throws Exception {
-				httpContext.httpResponder().sendStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+			public void handle(Exception ex, HttyContext httyContext) throws Exception {
+				httyContext.httyResponse().sendStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
 			}
 		};
 	}
 
-	public HttpServerBuilder addHttpHandler(HttpHandler... _httpHandlers) {
-		if (_httpHandlers != null) {
-			for (HttpHandler httpHandler : _httpHandlers) {
-				this.httpHandlers.add(httpHandler);
+	public HttpServerBuilder addHttpHandler(HttyHandler... httyHandlers) {
+		if (httyHandlers != null) {
+			for (HttyHandler httyHandler : httyHandlers) {
+				this.httyHandlers.add(httyHandler);
 			}
 		}
 		return this;
 	}
 
-	public HttpServerBuilder addHttpHandler(Collection<? extends HttpHandler> _httpHandlers) {
-		Collection tmp = _httpHandlers;
-		this.httpHandlers.addAll(tmp);
+	public HttpServerBuilder addHttpHandler(Collection<? extends HttyHandler> httyHandlers) {
+		this.httyHandlers.addAll(httyHandlers);
 		return this;
 	}
 
 
-	public HttpServerBuilder addHttpInterceptor(HttpInterceptor... _httpInterceptors) {
-		if (_httpInterceptors != null)
-			for (HttpInterceptor httpInterceptor : _httpInterceptors) {
-				this.httpInterceptors.add(httpInterceptor);
+	public HttpServerBuilder addHttpInterceptor(HttyInterceptor... httyInterceptors) {
+		if (httyInterceptors != null)
+			for (HttyInterceptor httyInterceptor : httyInterceptors) {
+				this.httyInterceptors.add(httyInterceptor);
 			}
 		return this;
 	}
 
-	public HttpServerBuilder addHttpInterceptor(Collection<? extends HttpInterceptor> _httpInterceptors) {
-		Collection tmp = _httpInterceptors;
-		this.httpInterceptors.addAll(tmp);
+	public HttpServerBuilder addHttpInterceptor(Collection<? extends HttyInterceptor> httyInterceptors) {
+		this.httyInterceptors.addAll(httyInterceptors);
 		return this;
 	}
 
@@ -191,10 +191,7 @@ public class HttpServerBuilder {
 		return this;
 	}
 
-	public HttpServerBuilder setUrlRewriter(URLRewriter urlRewriter) {
-		this.urlRewriter = urlRewriter;
-		return this;
-	}
+
 
 	public HttpServerBuilder setCorsConfig(CorsConfig corsConfig) {
 		this.corsConfig = corsConfig;
@@ -202,23 +199,23 @@ public class HttpServerBuilder {
 	}
 
 	/**
-	 * Build a {@link HttpServer} with pre-setting
+	 * Build a {@link HttyServer} with pre-setting
 	 *
-	 * @return instance of {@link HttpServer}
+	 * @return instance of {@link HttyServer}
 	 */
-	public HttpServer build() {
+	public HttyServer build() {
 		InetSocketAddress bindAddress;
 		if (host == null) {
 			bindAddress = new InetSocketAddress("localhost", port);
 		} else {
 			bindAddress = new InetSocketAddress(host, port);
 		}
-		return new BasicHttpServer(serverName, bossThreadPoolSize, workerThreadPoolSize,
+		return new BasicHttyServer(serverName, bossThreadPoolSize, workerThreadPoolSize,
 				routerThreadPoolSize, execThreadPoolSize, routerThreadKeepAliveSecs,
 				execThreadKeepAliveSecs, channelConfigs, childChannelConfigs,
-				rejectedExecutionHandler, pipelineModifier, httpHandlers,
-				httpInterceptors, httpChunkLimit, exceptionHandler,
-				sslHandlerFactory, corsConfig, bindAddress, urlRewriter);
+				rejectedExecutionHandler, pipelineModifier, httyHandlers,
+				httyInterceptors, httpChunkLimit, exceptionHandler,
+				sslHandlerFactory, corsConfig, bindAddress);
 	}
 
 

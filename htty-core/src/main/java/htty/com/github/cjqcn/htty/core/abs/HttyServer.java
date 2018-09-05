@@ -3,7 +3,7 @@ package htty.com.github.cjqcn.htty.core.abs;
 /**
  * @author jqChan
  */
-public interface HttpServer {
+public interface HttyServer {
 
 	/**
 	 * Starts the HTTP server.

@@ -1,10 +1,9 @@
 package htty.com.github.cjqcn.htty.core;
 
 import com.sun.istack.internal.Nullable;
-import htty.com.github.cjqcn.htty.core.abs.AbstractHttpResponder;
-import htty.com.github.cjqcn.htty.core.abs.BodyProducer;
-import htty.com.github.cjqcn.htty.core.abs.ChunkResponder;
-import htty.com.github.cjqcn.htty.core.abs.HttpResponder;
+import htty.com.github.cjqcn.htty.core.abs.*;
+import htty.com.github.cjqcn.htty.core.abs.AbstractHttyResponse;
+import htty.com.github.cjqcn.htty.core.abs.HttyResponse;
 import htty.com.github.cjqcn.htty.core.util.HttpUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -23,17 +22,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Basic implementation of {@link HttpResponder} that uses {@link Channel} to write back to client.
+ * Basic implementation of {@link HttyResponse} that uses {@link Channel} to write back to client.
  */
-public final class BasicHttpResponder extends AbstractHttpResponder {
+public final class BasicHttyResponse extends AbstractHttyResponse {
 
-	private static final Logger LOG = LoggerFactory.getLogger(BasicHttpResponder.class);
+	private static final Logger LOG = LoggerFactory.getLogger(BasicHttyResponse.class);
 
 	private final Channel channel;
 	private final AtomicBoolean responded;
 	private final boolean sslEnabled;
 
-	public BasicHttpResponder(Channel channel, boolean sslEnabled) {
+	public BasicHttyResponse(Channel channel, boolean sslEnabled) {
 		this.channel = channel;
 		this.responded = new AtomicBoolean(false);
 		this.sslEnabled = sslEnabled;

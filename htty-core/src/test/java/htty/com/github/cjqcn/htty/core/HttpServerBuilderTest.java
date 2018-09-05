@@ -1,10 +1,10 @@
 package htty.com.github.cjqcn.htty.core;
 
-import static org.junit.Assert.*;
+import htty.com.github.cjqcn.htty.core.starter.HttpServerBuilder;
 
 public class HttpServerBuilderTest {
 
     public static void main(String[] args) throws Exception {
-        HttpServerBuilder.builder("HttpServer").build().start();
+        HttpServerBuilder.builder("HttyServer").build().start();
     }
 }

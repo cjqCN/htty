@@ -26,9 +26,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Base implementation of {@link HttpResponder} to simplify child implementations.
+ * Base implementation of {@link HttyResponse} to simplify child implementations.
  */
-public abstract class AbstractHttpResponder implements HttpResponder {
+public abstract class AbstractHttyResponse implements HttyResponse {
 
 	protected static final String OCTET_STREAM_TYPE = "application/octet-stream";
 

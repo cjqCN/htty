@@ -25,9 +25,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * HttpResponder is used to send response back to clients.
+ * HttyResponse is used to send response back to clients.
  */
-public interface HttpResponder {
+public interface HttyResponse {
 
 	/**
 	 * Sends json response back to the client. This is a convenient method to send json encoded string with
