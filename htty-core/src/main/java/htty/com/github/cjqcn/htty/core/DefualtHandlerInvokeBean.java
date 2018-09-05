@@ -52,8 +52,9 @@ public class DefualtHandlerInvokeBean implements HandlerInvokeBean {
 	}
 
 	boolean preHandle() throws Exception {
-		if (httpInterceptors == null)
+		if (httpInterceptors == null) {
 			return true;
+		}
 		// HttpInterceptors'chain
 		for (HttpInterceptor httpInterceptor : httpInterceptors) {
 			// Use reflect to get channel
