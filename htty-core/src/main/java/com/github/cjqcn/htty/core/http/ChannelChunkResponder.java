@@ -31,35 +31,35 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 final class ChannelChunkResponder implements ChunkResponder {
 
-    private final Channel channel;
-    private final AtomicBoolean closed;
+	private final Channel channel;
+	private final AtomicBoolean closed;
 
-    ChannelChunkResponder(Channel channel) {
-        this.channel = channel;
-        this.closed = new AtomicBoolean(false);
-    }
+	ChannelChunkResponder(Channel channel) {
+		this.channel = channel;
+		this.closed = new AtomicBoolean(false);
+	}
 
-    @Override
-    public void sendChunk(ByteBuffer chunk) throws IOException {
-        sendChunk(Unpooled.wrappedBuffer(chunk));
-    }
+	@Override
+	public void sendChunk(ByteBuffer chunk) throws IOException {
+		sendChunk(Unpooled.wrappedBuffer(chunk));
+	}
 
-    @Override
-    public void sendChunk(ByteBuf chunk) throws IOException {
-        if (closed.get()) {
-            throw new IOException("ChunkResponder already closed.");
-        }
-        if (!channel.isActive()) {
-            throw new IOException("Connection already closed.");
-        }
-        channel.write(new DefaultHttpContent(chunk));
-    }
+	@Override
+	public void sendChunk(ByteBuf chunk) throws IOException {
+		if (closed.get()) {
+			throw new IOException("ChunkResponder already closed.");
+		}
+		if (!channel.isActive()) {
+			throw new IOException("Connection already closed.");
+		}
+		channel.write(new DefaultHttpContent(chunk));
+	}
 
-    @Override
-    public void close() throws IOException {
-        if (!closed.compareAndSet(false, true)) {
-            return;
-        }
-        channel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
-    }
+	@Override
+	public void close() throws IOException {
+		if (!closed.compareAndSet(false, true)) {
+			return;
+		}
+		channel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+	}
 }

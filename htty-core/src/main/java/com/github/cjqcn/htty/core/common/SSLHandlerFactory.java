@@ -8,20 +8,20 @@ import javax.net.ssl.SSLEngine;
 
 public class SSLHandlerFactory {
 
-    private final SslContext sslContext;
-    private boolean needClientAuth;
+	private final SslContext sslContext;
+	private boolean needClientAuth;
 
-    SSLHandlerFactory(final SslContext sslContext,
-                      final boolean needClientAuth) {
-        this.sslContext = sslContext;
-        this.needClientAuth = needClientAuth;
-    }
+	SSLHandlerFactory(final SslContext sslContext,
+					  final boolean needClientAuth) {
+		this.sslContext = sslContext;
+		this.needClientAuth = needClientAuth;
+	}
 
 
-    public SslHandler create(ByteBufAllocator bufferAllocator) {
-        SSLEngine engine = sslContext.newEngine(bufferAllocator);
-        engine.setNeedClientAuth(needClientAuth);
-        engine.setUseClientMode(false);
-        return new SslHandler(engine);
-    }
+	public SslHandler create(ByteBufAllocator bufferAllocator) {
+		SSLEngine engine = sslContext.newEngine(bufferAllocator);
+		engine.setNeedClientAuth(needClientAuth);
+		engine.setUseClientMode(false);
+		return new SslHandler(engine);
+	}
 }

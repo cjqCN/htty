@@ -8,9 +8,6 @@ import com.github.cjqcn.htty.core.worker.HttyWorker;
  * @author: chenjinquan
  * @create: 2018-09-11 23:07
  **/
-public interface PathMatch {
-
-    boolean mathes(HttyRequest httyRequest, HttyWorker httyWorker);
-
-
+public interface PathMatcher {
+	boolean mathes(HttyRequest httyRequest, HttyWorker httyWorker);
 }

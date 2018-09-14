@@ -4,23 +4,23 @@ import com.github.cjqcn.htty.core.common.HttyContext;
 
 public interface HttyWorkerWrapper {
 
-    HttyWorker httyWorker();
+	HttyWorker httyWorker();
 
-    HttyContext httyContext();
+	HttyContext httyContext();
 
-    static HttyWorkerWrapper create(final HttyWorker httyWorker, final HttyContext httyContext) {
-        return new HttyWorkerWrapper() {
-            @Override
-            public HttyWorker httyWorker() {
-                return httyWorker;
-            }
+	static HttyWorkerWrapper create(final HttyWorker httyWorker, final HttyContext httyContext) {
+		return new HttyWorkerWrapper() {
+			@Override
+			public HttyWorker httyWorker() {
+				return httyWorker;
+			}
 
-            @Override
-            public HttyContext httyContext() {
-                return httyContext;
-            }
-        };
-    }
+			@Override
+			public HttyContext httyContext() {
+				return httyContext;
+			}
+		};
+	}
 
 
 }

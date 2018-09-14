@@ -8,19 +8,19 @@ import com.github.cjqcn.htty.core.http.HttyResponse;
  */
 public interface HttyContext {
 
-    /**
-     * Returns {@link HttyRequest} in this.
-     *
-     * @return The {@link HttyRequest}
-     */
-    HttyRequest httyRequest();
+	/**
+	 * Returns {@link HttyRequest} in this.
+	 *
+	 * @return The {@link HttyRequest}
+	 */
+	HttyRequest httyRequest();
 
-    /**
-     * Returns {@link HttyResponse} in this.
-     *
-     * @return The {@link HttyResponse}
-     */
-    HttyResponse httyResponse();
+	/**
+	 * Returns {@link HttyResponse} in this.
+	 *
+	 * @return The {@link HttyResponse}
+	 */
+	HttyResponse httyResponse();
 }
 
 
