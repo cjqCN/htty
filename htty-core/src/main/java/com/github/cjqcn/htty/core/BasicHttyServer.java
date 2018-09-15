@@ -152,7 +152,7 @@ class BasicHttyServer implements HttyServer {
 
 				bindAddress = (InetSocketAddress) serverChannel.localAddress();
 
-				LOG.debug("Started HTTP Service {} at address {}", serverName, bindAddress);
+				LOG.info("Started HTTP Service {} at address {}", serverName, bindAddress);
 				state = State.RUNNING;
 				//sync
 				serverChannel.closeFuture().sync();
@@ -192,7 +192,7 @@ class BasicHttyServer implements HttyServer {
 	@Override
 	public synchronized void stop() throws Exception {
 		if (state == State.STOPPED) {
-			LOG.debug("Ignore stop() call on HTTP service {} since it has already been stopped.", serverName);
+			LOG.info("Ignore stop() call on HTTP service {} since it has already been stopped.", serverName);
 			return;
 		}
 
@@ -215,7 +215,7 @@ class BasicHttyServer implements HttyServer {
 			throw t;
 		}
 		state = State.STOPPED;
-		LOG.debug("Stopped HTTP Service {} on address {}", serverName, bindAddress);
+		LOG.info("Stopped HTTP Service {} on address {}", serverName, bindAddress);
 	}
 
 
