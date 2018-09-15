@@ -15,27 +15,28 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
  **/
 public class HelloWorldServer {
 
-	public static void main(String[] args) throws Exception {
-		HttyServerBuilder.builder("HelloWorldServer").setPort(8080)
-				.addHttyHandler(new HelloWorldHandler())
-				.build().start();
-	}
+    public static void main(String[] args) throws Exception {
+        HttyServerBuilder.builder("HelloWorldServer")
+                .setPort(8080)
+                .addHttyHandler(new HelloWorldHandler())
+                .build().start();
+    }
 
 
-	static class HelloWorldHandler implements HttyWorker {
-		@Override
-		public void handle(HttyRequest httyRequest, HttyResponse httyResponse) {
-			httyResponse.sendString(OK, "hello world");
-		}
+    static class HelloWorldHandler implements HttyWorker {
+        @Override
+        public void handle(HttyRequest httyRequest, HttyResponse httyResponse) {
+            httyResponse.sendString(OK, "hello world");
+        }
 
-		@Override
-		public HttyMethod[] HttpMethod() {
-			return HttyMethod.ALL_HTTP_METHOD;
-		}
+        @Override
+        public HttyMethod[] HttpMethod() {
+            return HttyMethod.ALL_HTTP_METHOD;
+        }
 
-		@Override
-		public String path() {
-			return "/hello";
-		}
-	}
+        @Override
+        public String path() {
+            return "/hello";
+        }
+    }
 }
