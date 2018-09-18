@@ -11,6 +11,7 @@
     <modules>
         <module>htty-core</module>
         <module>htty-sample</module>
+        <module>htty-annotation-support</module>
     </modules>
 
 
