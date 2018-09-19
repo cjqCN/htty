@@ -12,12 +12,10 @@ public class BasicPathMatcher implements PathMatcher {
 
 	public static final PathMatcher instance = new BasicPathMatcher();
 
-	//TODO
+	private static final PathUtil pathUtil = new PathUtil();
+
 	@Override
 	public boolean mathes(HttyRequest httyRequest, HttyWorker httyWorker) {
-		if (httyRequest.uri().equals(httyWorker.path())) {
-			return true;
-		}
-		return false;
+		return pathUtil.match(httyWorker.path(), httyRequest.uri());
 	}
 }
