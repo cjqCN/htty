@@ -1,5 +1,6 @@
 package com.github.cjqcn.htty.core.netty.handler;
 
+import com.github.cjqcn.htty.core.common.ExceptionHandler;
 import com.github.cjqcn.htty.core.common.HttyContext;
 import com.github.cjqcn.htty.core.interceptor.HttyInterceptor;
 import io.netty.channel.ChannelHandlerContext;
@@ -11,14 +12,18 @@ import org.slf4j.LoggerFactory;
  * @author jqChan
  * @date 2018/7/10
  */
-public class HttyInterceptorHandler extends SimpleChannelInboundHandler<HttyContext> implements HttyInterceptor {
+public class HttyInterceptorHandler extends SimpleChannelInboundHandler<HttyContext> implements HttyInterceptor,
+		ExceptionHandler {
 
 	private static final Logger LOG = LoggerFactory.getLogger(HttyRouterHandler.class);
 
 	private HttyInterceptor delegate;
 
-	public HttyInterceptorHandler(HttyInterceptor delegate) {
+	private ExceptionHandler exceptionHandler;
+
+	public HttyInterceptorHandler(HttyInterceptor delegate, ExceptionHandler exceptionHandler) {
 		this.delegate = delegate;
+		this.exceptionHandler = exceptionHandler;
 	}
 
 	@Override
@@ -31,8 +36,9 @@ public class HttyInterceptorHandler extends SimpleChannelInboundHandler<HttyCont
 
 	@Override
 	public void postHandle(HttyContext httyContext) {
-		if (!delegateIsNull())
+		if (!delegateIsNull()) {
 			delegate.postHandle(httyContext);
+		}
 	}
 
 
@@ -42,13 +48,24 @@ public class HttyInterceptorHandler extends SimpleChannelInboundHandler<HttyCont
 
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, HttyContext httyContext) {
-		if (preHandle(httyContext)) {
-			ctx.fireChannelRead(httyContext);
-			postHandle(httyContext);
-		} else {
-			ctx.close();
+		try {
+			LOG.trace("--> HttyInterceptorHandler");
+			if (preHandle(httyContext)) {
+				ctx.fireChannelRead(httyContext);
+				postHandle(httyContext);
+			} else {
+				LOG.trace("postHandle returns false, connection is closed");
+				ctx.close();
+			}
+		} catch (Exception ex) {
+			handle(ex, httyContext);
 		}
 	}
 
 
+	@Override
+	public void handle(Exception ex, HttyContext httyContext) {
+		LOG.error("Interceptor 异常", ex);
+		exceptionHandler.handle(ex, httyContext);
+	}
 }

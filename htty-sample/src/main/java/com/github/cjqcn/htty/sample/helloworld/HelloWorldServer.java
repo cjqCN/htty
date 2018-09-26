@@ -16,7 +16,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 public class HelloWorldServer {
 
     public static void main(String[] args) throws Exception {
-        HttyServerBuilder.builder("HelloWorldServer")
+        HttyServerBuilder.builder("InterceptorServer")
                 .setPort(8080)
                 .addHttyHandler(new HelloWorldHandler())
                 .build().start();

@@ -264,20 +264,21 @@ class BasicHttyServer implements HttyServer {
 							pipeline.addLast(SSL_HANDLER_NAMRE, sslHandlerFactory.create(ch.alloc()));
 						}
 						pipeline.addLast(HTTP_SERVER_CODEC_HANDLER_NAME, new HttpServerCodec());
-						pipeline.addLast(HTTP_AGGREGATOR_CODEC_HANDLER_NAME, new HttpObjectAggregator(10 * 1024 * 1024));
+						pipeline.addLast(HTTP_AGGREGATOR_CODEC_HANDLER_NAME,
+								new HttpObjectAggregator(10 * 1024 * 1024));
 						if (corsConfig != null) {
 							pipeline.addLast(CORS_HANDLER_NAME, new CorsHandler(corsConfig));
 						}
 						pipeline.addLast(CONTENT_COMPRESSOR_HANDLER_NAME, new HttpContentCompressor());
 						pipeline.addLast(CHUNKED_WRITE_HANDLER, new ChunkedWriteHandler());
 						pipeline.addLast(HTTP_WRAPPED_HANDLER, new HttyWrappedHandler());
-						pipeline.addLast(INTERCEPTOR_HANDLER_NAME, new HttyInterceptorHandler(httyInterceptor));
+						pipeline.addLast(INTERCEPTOR_HANDLER_NAME, new HttyInterceptorHandler(httyInterceptor, exceptionHandler));
 
 						addLast(pipeline, routerEventExecutorGroup, ROUTER_HANDLER_NAME, new HttyRouterHandler
 								(httyRouter));
 
-						addLast(pipeline, execEventExecutorGroup, DISPATCHER_HANDLER_NAME, new HttyDispatcherHandler
-								());
+						addLast(pipeline, execEventExecutorGroup, DISPATCHER_HANDLER_NAME,
+								new HttyDispatcherHandler(exceptionHandler));
 
 						if (pipelineModifier != null) {
 							pipelineModifier.modify(pipeline);

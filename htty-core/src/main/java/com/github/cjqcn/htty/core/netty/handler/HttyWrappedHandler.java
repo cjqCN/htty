@@ -28,7 +28,7 @@ public class HttyWrappedHandler extends SimpleChannelInboundHandler<FullHttpRequ
 	 */
 	@Override
 	protected void channelRead0(ChannelHandlerContext channelHandlerContext, FullHttpRequest fullHttpRequest) {
-		LOG.debug("init BasicHttyContext");
+		LOG.trace("--> HttyWrappedHandler");
 		HttyRequest requester = new BasicHttyRequest(fullHttpRequest);
 		HttyResponse responder = new BasicHttyResponse(channelHandlerContext.channel(), false);
 		channelHandlerContext.fireChannelRead(new BasicHttyContext(requester, responder));

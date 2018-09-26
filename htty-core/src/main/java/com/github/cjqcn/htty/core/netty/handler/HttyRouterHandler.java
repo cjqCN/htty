@@ -18,19 +18,11 @@ public class HttyRouterHandler extends SimpleChannelInboundHandler<HttyContext> 
 		this.delegate = delegate;
 	}
 
-
-	/**
-	 * Is called for each message of type {@link HttyContext}.
-	 *
-	 * @param ctx         the {@link ChannelHandlerContext} which this {@link SimpleChannelInboundHandler}
-	 *                    belongs to
-	 * @param httyContext the message to handle
-	 * @throws Exception is thrown if an error occurred
-	 */
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, HttyContext httyContext) throws Exception {
-		LOG.debug("--> HttyRouterHandler");
+		LOG.trace("--> HttyRouterHandler");
 		HttyWorkerWrapper httyWorkerWrapper = route(httyContext);
+		LOG.trace("routed to httyWork:{}", httyWorkerWrapper.httyWorker().getClass().getName());
 		ctx.fireChannelRead(httyWorkerWrapper);
 	}
 

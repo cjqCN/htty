@@ -1,13 +1,12 @@
 package com.github.cjqcn.htty.core;
 
+import com.github.cjqcn.htty.core.common.BasicExceptionHandler;
 import com.github.cjqcn.htty.core.common.ExceptionHandler;
-import com.github.cjqcn.htty.core.common.HttyContext;
 import com.github.cjqcn.htty.core.common.SSLHandlerFactory;
 import com.github.cjqcn.htty.core.http.ChannelPipelineModifier;
 import com.github.cjqcn.htty.core.http.HttyHandler;
 import com.github.cjqcn.htty.core.interceptor.HttyInterceptor;
 import io.netty.channel.ChannelOption;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.cors.CorsConfig;
 
 import java.net.InetSocketAddress;
@@ -90,12 +89,7 @@ public class HttyServerBuilder {
 		channelConfigs.put(ChannelOption.SO_BACKLOG, DEFAULT_CONNECTION_BACKLOG);
 		sslHandlerFactory = null;
 		corsConfig = null;
-		exceptionHandler = new ExceptionHandler() {
-			@Override
-			public void handle(Exception ex, HttyContext httyContext) throws Exception {
-				httyContext.httyResponse().sendStatus(HttpResponseStatus.INTERNAL_SERVER_ERROR);
-			}
-		};
+		exceptionHandler = new BasicExceptionHandler();
 	}
 
 	public HttyServerBuilder addHttyHandler(HttyHandler... httyHandlers) {
@@ -114,10 +108,11 @@ public class HttyServerBuilder {
 
 
 	public HttyServerBuilder addHttyInterceptor(HttyInterceptor... httyInterceptors) {
-		if (httyInterceptors != null)
+		if (httyInterceptors != null) {
 			for (HttyInterceptor httyInterceptor : httyInterceptors) {
 				this.httyInterceptors.add(httyInterceptor);
 			}
+		}
 		return this;
 	}
 
