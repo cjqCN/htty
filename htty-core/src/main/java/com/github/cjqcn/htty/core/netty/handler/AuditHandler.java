@@ -16,8 +16,7 @@ public class AuditHandler extends ChannelInboundHandlerAdapter {
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
 		LOG.trace("--> AuditHandler");
 		ByteBuf buf = (ByteBuf) msg;
-		String res = buf.toString(CharsetUtil.UTF_8);
-		LOG.debug("\n{}", res);
+		LOG.debug("\n{}", buf.toString(CharsetUtil.UTF_8));
 		ctx.fireChannelRead(msg);
 	}
 
