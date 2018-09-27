@@ -248,6 +248,23 @@ class BasicHttyServer implements HttyServer {
 		EventLoopGroup workerGroup = new NioEventLoopGroup(workerThreadPoolSize,
 				createDaemonThreadFactory(serverName + "-worker-thread"));
 		ServerBootstrap bootstrap = new ServerBootstrap();
+
+		HttpServerCodec httpServerCodec = new HttpServerCodec();
+		HttpObjectAggregator httpObjectAggregator = new HttpObjectAggregator(10 * 1024 * 1024);
+		CorsHandler corsHandler = null;
+		if (corsConfig != null) {
+			corsHandler = new CorsHandler(corsConfig);
+		}
+		AuditHandler auditHandler = new AuditHandler();
+		HttpContentCompressor httpContentCompressor = new HttpContentCompressor();
+		ChunkedWriteHandler chunkedWriteHandler = new ChunkedWriteHandler();
+		HttyWrappedHandler httyWrappedHandler = new HttyWrappedHandler();
+		HttyInterceptorHandler httyInterceptorHandler = new HttyInterceptorHandler(httyInterceptor,
+				exceptionHandler);
+		HttyRouterHandler httyRouterHandler = new HttyRouterHandler(httyRouter);
+		HttyDispatcherHandler httyDispatcherHandler = new HttyDispatcherHandler(exceptionHandler);
+
+		CorsHandler _corsHandler = corsHandler;
 		bootstrap
 				.group(bossGroup, workerGroup)
 				.channel(NioServerSocketChannel.class)
@@ -257,28 +274,25 @@ class BasicHttyServer implements HttyServer {
 						channelGroup.add(ch);
 
 						ChannelPipeline pipeline = ch.pipeline();
-						pipeline.addLast(AUDITER_HANDLER_NAME, new AuditHandler());
+						pipeline.addLast(AUDITER_HANDLER_NAME, auditHandler);
 
 						if (sslHandlerFactory != null) {
 							// Add SSLHandler if SSL is enabled
 							pipeline.addLast(SSL_HANDLER_NAMRE, sslHandlerFactory.create(ch.alloc()));
 						}
-						pipeline.addLast(HTTP_SERVER_CODEC_HANDLER_NAME, new HttpServerCodec());
-						pipeline.addLast(HTTP_AGGREGATOR_CODEC_HANDLER_NAME,
-								new HttpObjectAggregator(10 * 1024 * 1024));
-						if (corsConfig != null) {
-							pipeline.addLast(CORS_HANDLER_NAME, new CorsHandler(corsConfig));
+						pipeline.addLast(HTTP_SERVER_CODEC_HANDLER_NAME, httpServerCodec);
+						pipeline.addLast(HTTP_AGGREGATOR_CODEC_HANDLER_NAME, httpObjectAggregator);
+						if (_corsHandler != null) {
+							pipeline.addLast(CORS_HANDLER_NAME, _corsHandler);
 						}
-						pipeline.addLast(CONTENT_COMPRESSOR_HANDLER_NAME, new HttpContentCompressor());
-						pipeline.addLast(CHUNKED_WRITE_HANDLER, new ChunkedWriteHandler());
-						pipeline.addLast(HTTP_WRAPPED_HANDLER, new HttyWrappedHandler());
-						pipeline.addLast(INTERCEPTOR_HANDLER_NAME, new HttyInterceptorHandler(httyInterceptor, exceptionHandler));
+						pipeline.addLast(CONTENT_COMPRESSOR_HANDLER_NAME, httpContentCompressor);
+						pipeline.addLast(CHUNKED_WRITE_HANDLER, chunkedWriteHandler);
+						pipeline.addLast(HTTP_WRAPPED_HANDLER, httyWrappedHandler);
+						pipeline.addLast(INTERCEPTOR_HANDLER_NAME, httyInterceptorHandler);
 
-						addLast(pipeline, routerEventExecutorGroup, ROUTER_HANDLER_NAME, new HttyRouterHandler
-								(httyRouter));
+						addLast(pipeline, routerEventExecutorGroup, ROUTER_HANDLER_NAME, httyRouterHandler);
 
-						addLast(pipeline, execEventExecutorGroup, DISPATCHER_HANDLER_NAME,
-								new HttyDispatcherHandler(exceptionHandler));
+						addLast(pipeline, execEventExecutorGroup, DISPATCHER_HANDLER_NAME, httyDispatcherHandler);
 
 						if (pipelineModifier != null) {
 							pipelineModifier.modify(pipeline);
