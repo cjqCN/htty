@@ -9,11 +9,14 @@ import org.slf4j.LoggerFactory;
 
 public class AuditHandler extends ChannelInboundHandlerAdapter {
 
+	public AuditHandler(){
+		LOG.info("init AuditHandler");
+	}
 
 	private static final Logger LOG = LoggerFactory.getLogger(AuditHandler.class);
 
 	@Override
-	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+	public void channelRead(ChannelHandlerContext ctx, Object msg) {
 		LOG.trace("--> AuditHandler");
 		ByteBuf buf = (ByteBuf) msg;
 		LOG.debug("\n{}", buf.toString(CharsetUtil.UTF_8));

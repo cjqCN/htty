@@ -22,6 +22,7 @@ public class HttyInterceptorHandler extends SimpleChannelInboundHandler<HttyCont
 	private ExceptionHandler exceptionHandler;
 
 	public HttyInterceptorHandler(HttyInterceptor delegate, ExceptionHandler exceptionHandler) {
+		LOG.info("init HttyInterceptorHandler");
 		this.delegate = delegate;
 		this.exceptionHandler = exceptionHandler;
 	}

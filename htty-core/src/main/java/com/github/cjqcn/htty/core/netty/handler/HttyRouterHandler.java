@@ -15,6 +15,7 @@ public class HttyRouterHandler extends SimpleChannelInboundHandler<HttyContext> 
 	private HttyRouter delegate;
 
 	public HttyRouterHandler(HttyRouter delegate) {
+		LOG.info("init HttyRouterHandler");
 		this.delegate = delegate;
 	}
 

@@ -17,6 +17,9 @@ public class HttyWrappedHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
 	private static final Logger LOG = LoggerFactory.getLogger(HttyWrappedHandler.class);
 
+	public HttyWrappedHandler(){
+		LOG.info("init HttyWrappedHandler");
+	}
 
 	/**
 	 * Is called for each message of type {@link HttpRequest}.

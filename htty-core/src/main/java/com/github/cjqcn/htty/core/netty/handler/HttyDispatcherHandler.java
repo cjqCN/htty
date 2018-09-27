@@ -47,6 +47,7 @@ public class HttyDispatcherHandler extends SimpleChannelInboundHandler<HttyWorke
 	}
 
 	public HttyDispatcherHandler(final HttyDispatcher httyDispatcher, final ExceptionHandler exceptionHandler) {
+		LOG.info("init HttyDispatcherHandler");
 		this.delegate = httyDispatcher;
 		if (delegateIsNull()) {
 			throw new IllegalStateException("Unset httyDispatcher!");
