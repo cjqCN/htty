@@ -1,12 +1,14 @@
 package com.github.cjqcn.htty.core.netty.handler;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ChannelHandler.Sharable
 public class AuditHandler extends ChannelInboundHandlerAdapter {
 
 	public AuditHandler(){

@@ -6,11 +6,13 @@ import com.github.cjqcn.htty.core.dispatcher.BasicHttyDispatcher;
 import com.github.cjqcn.htty.core.dispatcher.HttyDispatcher;
 import com.github.cjqcn.htty.core.worker.HttyWorker;
 import com.github.cjqcn.htty.core.worker.HttyWorkerWrapper;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ChannelHandler.Sharable
 public class HttyDispatcherHandler extends SimpleChannelInboundHandler<HttyWorkerWrapper> implements HttyDispatcher,
 		ExceptionHandler {
 

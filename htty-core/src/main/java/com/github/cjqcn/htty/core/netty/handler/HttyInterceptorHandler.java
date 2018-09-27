@@ -3,6 +3,7 @@ package com.github.cjqcn.htty.core.netty.handler;
 import com.github.cjqcn.htty.core.common.ExceptionHandler;
 import com.github.cjqcn.htty.core.common.HttyContext;
 import com.github.cjqcn.htty.core.interceptor.HttyInterceptor;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.slf4j.Logger;
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory;
  * @author jqChan
  * @date 2018/7/10
  */
+@ChannelHandler.Sharable
 public class HttyInterceptorHandler extends SimpleChannelInboundHandler<HttyContext> implements HttyInterceptor,
 		ExceptionHandler {
 

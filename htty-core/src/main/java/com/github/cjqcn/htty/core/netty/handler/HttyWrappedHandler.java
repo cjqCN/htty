@@ -6,6 +6,7 @@ import com.github.cjqcn.htty.core.http.BasicHttyRequest;
 import com.github.cjqcn.htty.core.http.BasicHttyResponse;
 import com.github.cjqcn.htty.core.http.HttyRequest;
 import com.github.cjqcn.htty.core.http.HttyResponse;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -13,6 +14,7 @@ import io.netty.handler.codec.http.HttpRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ChannelHandler.Sharable
 public class HttyWrappedHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(HttyWrappedHandler.class);

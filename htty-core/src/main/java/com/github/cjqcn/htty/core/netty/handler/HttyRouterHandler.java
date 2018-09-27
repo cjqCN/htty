@@ -3,11 +3,13 @@ package com.github.cjqcn.htty.core.netty.handler;
 import com.github.cjqcn.htty.core.common.HttyContext;
 import com.github.cjqcn.htty.core.router.HttyRouter;
 import com.github.cjqcn.htty.core.worker.HttyWorkerWrapper;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ChannelHandler.Sharable
 public class HttyRouterHandler extends SimpleChannelInboundHandler<HttyContext> implements HttyRouter {
 
 	private static final Logger LOG = LoggerFactory.getLogger(HttyRouterHandler.class);
