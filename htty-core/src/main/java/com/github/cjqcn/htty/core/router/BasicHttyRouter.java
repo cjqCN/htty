@@ -1,23 +1,20 @@
 package com.github.cjqcn.htty.core.router;
 
-import com.github.cjqcn.htty.core.common.*;
-import com.github.cjqcn.htty.core.http.HttyHandler;
+import com.github.cjqcn.htty.core.common.BasicMethodMatcher;
+import com.github.cjqcn.htty.core.common.BasicPathMatcher;
+import com.github.cjqcn.htty.core.common.MethodMatcher;
+import com.github.cjqcn.htty.core.common.PathMatcher;
 import com.github.cjqcn.htty.core.http.HttyRequest;
 import com.github.cjqcn.htty.core.worker.HttyWorker;
-import com.github.cjqcn.htty.core.worker.HttyWorkerWrapper;
 import com.github.cjqcn.htty.core.worker.MethodNotSupportHttyWorker;
 import com.github.cjqcn.htty.core.worker.NotFoundHttyWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class BasicHttyRouter implements HttyRouter {
 
 	private static final Logger LOG = LoggerFactory.getLogger(BasicHttyRouter.class);
 
-	private final HttyResourceHolder httpResourceHolder;
 	private Iterable<? extends HttyWorker> httyWorkers;
 	private PathMatcher pathMatcher = BasicPathMatcher.instance;
 	private MethodMatcher methodMatcher = BasicMethodMatcher.instance;
@@ -25,18 +22,17 @@ public class BasicHttyRouter implements HttyRouter {
 	private static NotFoundHttyWorker notFoundHttyWorker = new NotFoundHttyWorker();
 	private static MethodNotSupportHttyWorker methodNotSupportHttyWorker = new MethodNotSupportHttyWorker();
 
-	public BasicHttyRouter(final HttyResourceHolder httpResourceHolder) {
-		LOG.info("init BasicHttyRouter");
-		this.httpResourceHolder = httpResourceHolder;
-		initHttyWorker(httpResourceHolder.getHttyHandlers());
+	public BasicHttyRouter(final Iterable<? extends HttyWorker> httyWorkers) {
+		LOG.info("Init BasicHttyRouter");
+		this.httyWorkers = httyWorkers;
 	}
 
 	@Override
 	public HttyWorker route(HttyRequest request) {
-		return _route(request);
+		return route0(request);
 	}
 
-	private HttyWorker _route(HttyRequest request) {
+	private HttyWorker route0(HttyRequest request) {
 		if (!hasHttyWorkers()) {
 			return notFoundHttyWorker;
 		}
@@ -52,20 +48,7 @@ public class BasicHttyRouter implements HttyRouter {
 		return notFoundHttyWorker;
 	}
 
-
 	private boolean hasHttyWorkers() {
 		return httyWorkers != null;
 	}
-
-
-	private void initHttyWorker(Iterable<? extends HttyHandler> httyHandlers) {
-		List<HttyWorker> _httyWorkers = new ArrayList<>();
-		httyHandlers.forEach(x -> {
-			if (x instanceof HttyWorker) {
-				_httyWorkers.add((HttyWorker) x);
-			}
-		});
-		httyWorkers = _httyWorkers;
-	}
-
 }

@@ -1,7 +1,6 @@
 package com.github.cjqcn.htty.sample.interceptor;
 
 import com.github.cjqcn.htty.core.HttyServerBuilder;
-import com.github.cjqcn.htty.core.common.HttyContext;
 import com.github.cjqcn.htty.core.http.HttyRequest;
 import com.github.cjqcn.htty.core.http.HttyResponse;
 import com.github.cjqcn.htty.core.interceptor.HttyInterceptor;

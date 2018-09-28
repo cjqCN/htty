@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 public class BasicAuditRecorder implements AuditRecorder {
 
 	public BasicAuditRecorder() {
-		LOG.info("init BasicAuditRecorder");
+		LOG.info("Init BasicAuditRecorder");
 	}
 
 	private static final Logger LOG = LoggerFactory.getLogger(BasicAuditRecorder.class);

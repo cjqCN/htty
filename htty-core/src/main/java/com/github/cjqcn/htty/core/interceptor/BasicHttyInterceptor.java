@@ -1,6 +1,5 @@
 package com.github.cjqcn.htty.core.interceptor;
 
-import com.github.cjqcn.htty.core.common.HttyResourceHolder;
 import com.github.cjqcn.htty.core.http.HttyRequest;
 import com.github.cjqcn.htty.core.http.HttyResponse;
 import org.slf4j.Logger;
@@ -16,13 +15,11 @@ public class BasicHttyInterceptor implements HttyInterceptor {
 
 	private static final Logger LOG = LoggerFactory.getLogger(BasicHttyInterceptor.class);
 
-	private final HttyResourceHolder httpResourceHolder;
 	private Iterable<? extends HttyInterceptor> httyInterceptors;
 
-	public BasicHttyInterceptor(final HttyResourceHolder httpResourceHolder) {
-		LOG.info("init BasicHttyInterceptor");
-		this.httpResourceHolder = httpResourceHolder;
-		this.httyInterceptors = httpResourceHolder.getHttyInterceptors();
+	public BasicHttyInterceptor(final Iterable<? extends HttyInterceptor> httyInterceptors) {
+		LOG.info("Init BasicHttyInterceptor");
+		this.httyInterceptors = httyInterceptors;
 	}
 
 	@Override

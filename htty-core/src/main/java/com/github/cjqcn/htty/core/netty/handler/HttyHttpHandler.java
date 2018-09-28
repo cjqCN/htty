@@ -27,30 +27,30 @@ public class HttyHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest
 
 	private static final Logger LOG = LoggerFactory.getLogger(HttyHttpHandler.class);
 
-	AuditRecorder auditRecorder;
-	HttyInterceptor httyInterceptor;
-	HttyRouter httyRouter;
-	HttyDispatcher httyDispatcher;
-	ExceptionHandler exceptionHandler;
+	private AuditRecorder auditRecorder;
+	private HttyInterceptor httyInterceptor;
+	private HttyRouter httyRouter;
+	private HttyDispatcher httyDispatcher;
+	private ExceptionHandler exceptionHandler;
+	private boolean sslEnabled;
 
 	public HttyHttpHandler(AuditRecorder auditRecorder, HttyInterceptor httyInterceptor,
 						   HttyRouter httyRouter, HttyDispatcher httyDispatcher,
-						   ExceptionHandler exceptionHandler) {
+						   ExceptionHandler exceptionHandler, boolean sslEnabled) {
 		this.auditRecorder = auditRecorder;
 		this.httyInterceptor = httyInterceptor;
 		this.httyRouter = httyRouter;
 		this.httyDispatcher = httyDispatcher;
 		this.exceptionHandler = exceptionHandler;
+		this.sslEnabled = sslEnabled;
 		verify();
 	}
-
 
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest fullHttpRequest) {
 		HttyRequest request = new BasicHttyRequest(fullHttpRequest);
-		HttyResponse response = new BasicHttyResponse(ctx.channel(), false);
+		HttyResponse response = new BasicHttyResponse(ctx.channel(), sslEnabled);
 		httyHandle(request, response);
-		//ctx.close();
 	}
 
 

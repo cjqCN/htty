@@ -1,15 +1,17 @@
 package com.github.cjqcn.htty.core;
 
-import com.github.cjqcn.htty.core.common.*;
+import com.github.cjqcn.htty.core.common.AuditRecorder;
+import com.github.cjqcn.htty.core.common.BasicAuditRecorder;
+import com.github.cjqcn.htty.core.common.ExceptionHandler;
+import com.github.cjqcn.htty.core.common.SSLHandlerFactory;
 import com.github.cjqcn.htty.core.dispatcher.BasicHttyDispatcher;
 import com.github.cjqcn.htty.core.dispatcher.HttyDispatcher;
-import com.github.cjqcn.htty.core.http.ChannelPipelineModifier;
-import com.github.cjqcn.htty.core.http.HttyHandler;
 import com.github.cjqcn.htty.core.interceptor.BasicHttyInterceptor;
 import com.github.cjqcn.htty.core.interceptor.HttyInterceptor;
-import com.github.cjqcn.htty.core.netty.handler.*;
+import com.github.cjqcn.htty.core.netty.handler.HttyHttpHandler;
 import com.github.cjqcn.htty.core.router.BasicHttyRouter;
 import com.github.cjqcn.htty.core.router.HttyRouter;
+import com.github.cjqcn.htty.core.worker.HttyWorker;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.group.ChannelGroup;
@@ -23,7 +25,6 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.cors.CorsConfig;
 import io.netty.handler.codec.http.cors.CorsHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
-import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ImmediateEventExecutor;
@@ -34,68 +35,50 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 class BasicHttyServer implements HttyServer {
 
 	private static final Logger LOG = LoggerFactory.getLogger(BasicHttyServer.class);
 
 	private final static String SSL_HANDLER_NAMRE = "ssl";
-	private final static String HTTP_SERVER_CODEC_HANDLER_NAME = "serverCodec";
+	private final static String HTTP_SERVER_CODEC_HANDLER_NAME = "httpServerCodec";
 	private final static String HTTP_AGGREGATOR_CODEC_HANDLER_NAME = "HttpObjectAggregator";
 	private final static String CORS_HANDLER_NAME = "cors";
 	private final static String CONTENT_COMPRESSOR_HANDLER_NAME = "compressor";
-	private final static String AUDITER_HANDLER_NAME = "auditer";
+	private final static String HTTP_HANDLER_NAME = "httpWork";
 	private final static String CHUNKED_WRITE_HANDLER = "chunkedWriter";
-	private final static String HTTP_WRAPPED_HANDLER = "httpWrapped";
-	private final static String ROUTER_HANDLER_NAME = "router";
-	private final static String INTERCEPTOR_HANDLER_NAME = "interceptor";
-	private final static String DISPATCHER_HANDLER_NAME = "dispatcher";
 
 	private final String serverName;
 	private final int bossThreadPoolSize;
 	private final int workerThreadPoolSize;
-	private final int routerThreadPoolSize;
-	private final int execThreadPoolSize;
-	private final long routerThreadKeepAliveSecs;
-	private final long execThreadKeepAliveSecs;
 	private final Map<ChannelOption, Object> channelConfigs;
 	private final Map<ChannelOption, Object> childChannelConfigs;
-	private final RejectedExecutionHandler rejectedExecutionHandler;
-	private final HandlerContext handlerContext;
-	private final HttyResourceHolder resourceHandler;
+	private final AuditRecorder auditRecorder;
 	private final HttyInterceptor httyInterceptor;
 	private final HttyRouter httyRouter;
-	private final ChannelPipelineModifier pipelineModifier;
-	private final int httpChunkLimit;
+	private final HttyDispatcher httyDispatcher;
 	private final ExceptionHandler exceptionHandler;
+
+	private final int httpChunkLimit;
+
 	private final SSLHandlerFactory sslHandlerFactory;
 	private final CorsConfig corsConfig;
 
 	private volatile State state;
 	private ServerBootstrap bootstrap;
 	private ChannelGroup channelGroup;
-	private EventExecutorGroup routerEventExecutorGroup;
-	private EventExecutorGroup execEventExecutorGroup;
 	private InetSocketAddress bindAddress;
 
 	/**
 	 * @param serverName
 	 * @param bossThreadPoolSize
 	 * @param workerThreadPoolSize
-	 * @param routerThreadPoolSize
-	 * @param execThreadPoolSize
-	 * @param routerThreadKeepAliveSecs
-	 * @param execThreadKeepAliveSecs
 	 * @param channelConfigs
 	 * @param childChannelConfigs
-	 * @param rejectedExecutionHandler
-	 * @param pipelineModifier
-	 * @param httpHandlers
+	 * @param httyWorkers
 	 * @param httpInterceptors
 	 * @param httpChunkLimit
 	 * @param exceptionHandler
@@ -104,12 +87,9 @@ class BasicHttyServer implements HttyServer {
 	 * @param bindAddress
 	 */
 	BasicHttyServer(final String serverName, final int bossThreadPoolSize, final int workerThreadPoolSize,
-					final int routerThreadPoolSize, final int execThreadPoolSize, final long routerThreadKeepAliveSecs,
-					final long execThreadKeepAliveSecs, final Map<ChannelOption, Object> channelConfigs,
-					final Map<ChannelOption, Object> childChannelConfigs, final RejectedExecutionHandler
-							rejectedExecutionHandler,
-					final ChannelPipelineModifier pipelineModifier,
-					Iterable<? extends HttyHandler> httpHandlers,
+					final Map<ChannelOption, Object> channelConfigs,
+					final Map<ChannelOption, Object> childChannelConfigs,
+					Iterable<? extends HttyWorker> httyWorkers,
 					Iterable<? extends HttyInterceptor> httpInterceptors,
 					final int httpChunkLimit, final ExceptionHandler exceptionHandler,
 					final SSLHandlerFactory sslHandlerFactory, final CorsConfig corsConfig,
@@ -117,18 +97,12 @@ class BasicHttyServer implements HttyServer {
 		this.serverName = serverName;
 		this.bossThreadPoolSize = bossThreadPoolSize;
 		this.workerThreadPoolSize = workerThreadPoolSize;
-		this.routerThreadPoolSize = routerThreadPoolSize;
-		this.execThreadPoolSize = execThreadPoolSize;
-		this.routerThreadKeepAliveSecs = routerThreadKeepAliveSecs;
-		this.execThreadKeepAliveSecs = execThreadKeepAliveSecs;
 		this.channelConfigs = channelConfigs;
 		this.childChannelConfigs = childChannelConfigs;
-		this.rejectedExecutionHandler = rejectedExecutionHandler;
-		this.resourceHandler = new BasicHttyResourceHolder(httpHandlers, httpInterceptors);
-		this.httyInterceptor = new BasicHttyInterceptor(resourceHandler);
-		this.httyRouter = new BasicHttyRouter(resourceHandler);
-		this.handlerContext = new BasicHandlerContext(resourceHandler);
-		this.pipelineModifier = pipelineModifier;
+		this.auditRecorder = new BasicAuditRecorder();
+		this.httyInterceptor = new BasicHttyInterceptor(httpInterceptors);
+		this.httyRouter = new BasicHttyRouter(httyWorkers);
+		this.httyDispatcher = new BasicHttyDispatcher();
 		this.httpChunkLimit = httpChunkLimit;
 		this.exceptionHandler = exceptionHandler;
 		this.sslHandlerFactory = sslHandlerFactory;
@@ -141,20 +115,17 @@ class BasicHttyServer implements HttyServer {
 	public synchronized void start() throws Exception {
 		if (state == State.ALREADY) {
 			try {
+				long start = System.currentTimeMillis();
 				LOG.info("Starting HTTP Service {} at address {}", serverName, bindAddress);
 				channelGroup = new DefaultChannelGroup(ImmediateEventExecutor.INSTANCE);
-				resourceHandler.init(handlerContext);
-				routerEventExecutorGroup = createEventExecutorGroup(routerThreadPoolSize,
-						routerThreadKeepAliveSecs, "router", rejectedExecutionHandler);
-				execEventExecutorGroup = createEventExecutorGroup(execThreadPoolSize,
-						execThreadKeepAliveSecs, "exec", rejectedExecutionHandler);
 				bootstrap = createBootstrap(channelGroup);
 				Channel serverChannel = bootstrap.bind(bindAddress).sync().channel();
 				channelGroup.add(serverChannel);
 
 				bindAddress = (InetSocketAddress) serverChannel.localAddress();
 
-				LOG.info("Started HTTP Service {} at address {}", serverName, bindAddress);
+				long end = System.currentTimeMillis();
+				LOG.info("Started HTTP Service {} at address {}, cost {}ms", serverName, bindAddress, end - start);
 				state = State.RUNNING;
 				//sync
 				serverChannel.closeFuture().sync();
@@ -164,10 +135,7 @@ class BasicHttyServer implements HttyServer {
 				try {
 					if (bootstrap != null) {
 						shutdownExecutorGroups(0, 5, TimeUnit.SECONDS, bootstrap.config().group(),
-								bootstrap.config().childGroup(), routerEventExecutorGroup, execEventExecutorGroup);
-					} else {
-						shutdownExecutorGroups(0, 5, TimeUnit.SECONDS,
-								routerEventExecutorGroup, execEventExecutorGroup);
+								bootstrap.config().childGroup());
 					}
 				} catch (Throwable t2) {
 					t.addSuppressed(t2);
@@ -192,24 +160,20 @@ class BasicHttyServer implements HttyServer {
 
 
 	@Override
-	public synchronized void stop() throws Exception {
+	public synchronized void stop() {
 		if (state == State.STOPPED) {
 			LOG.info("Ignore stop() call on HTTP service {} since it has already been stopped.", serverName);
 			return;
 		}
-
 		LOG.info("Stopping HTTP Service {}", serverName);
-
 		try {
 			try {
 				channelGroup.close().awaitUninterruptibly();
 			} finally {
 				try {
 					shutdownExecutorGroups(0, 5, TimeUnit.SECONDS,
-							bootstrap.config().group(), bootstrap.config().childGroup(), routerEventExecutorGroup,
-							execEventExecutorGroup);
+							bootstrap.config().group(), bootstrap.config().childGroup());
 				} finally {
-					resourceHandler.destroy(handlerContext);
 				}
 			}
 		} catch (Throwable t) {
@@ -220,57 +184,34 @@ class BasicHttyServer implements HttyServer {
 		LOG.info("Stopped HTTP Service {} on address {}", serverName, bindAddress);
 	}
 
-
-	private EventExecutorGroup createEventExecutorGroup(int size, long threadKeepAliveSecs, String executorName,
-														RejectedExecutionHandler rejectedExecutionHandler) {
-		if (size <= 0) {
-			return null;
-		}
-		ThreadFactory threadFactory = new ThreadFactory() {
-			private final ThreadGroup threadGroup = new ThreadGroup(serverName + "-" + executorName + "-thread");
-			private final AtomicLong count = new AtomicLong(0);
-
-			@Override
-			public Thread newThread(Runnable r) {
-				Thread t = new Thread(threadGroup, r, String.format("%s-" + executorName + "-%d", serverName, count
-						.getAndIncrement()));
-				t.setDaemon(true);
-				return t;
-			}
-		};
-		return new DefaultEventExecutorGroup(size, threadFactory);
-	}
-
 	/**
 	 * Creates the server bootstrap.
 	 */
-	private ServerBootstrap createBootstrap(final ChannelGroup channelGroup) throws Exception {
+	private ServerBootstrap createBootstrap(final ChannelGroup channelGroup) {
+		LOG.debug("Init bossGroup, size:{}", bossThreadPoolSize);
 		EventLoopGroup bossGroup = new NioEventLoopGroup(bossThreadPoolSize,
 				createDaemonThreadFactory(serverName + "-boss-thread"));
+		LOG.debug("Init workerGroup, size:{}", workerThreadPoolSize);
 		EventLoopGroup workerGroup = new NioEventLoopGroup(workerThreadPoolSize,
 				createDaemonThreadFactory(serverName + "-worker-thread"));
 		ServerBootstrap bootstrap = new ServerBootstrap();
 
-		AuditRecorder _auditRecorder = new BasicAuditRecorder();
-		HttyInterceptor _httyInterceptor = httyInterceptor;
-		HttyRouter _httyRouter = httyRouter;
-		HttyDispatcher _httyDispatcher = new BasicHttyDispatcher();
-		ExceptionHandler _exceptionHandler = exceptionHandler;
+		final boolean sslEnabled = (sslHandlerFactory != null);
 
-		HttyHttpHandler httyHttpHandler = new HttyHttpHandler(_auditRecorder, _httyInterceptor, _httyRouter,
-				_httyDispatcher, _exceptionHandler);
+		HttyHttpHandler httyHttpHandler = new HttyHttpHandler(auditRecorder, httyInterceptor, httyRouter,
+				httyDispatcher, exceptionHandler, sslEnabled);
 
 		bootstrap
 				.group(bossGroup, workerGroup)
 				.channel(NioServerSocketChannel.class)
 				.childHandler(new ChannelInitializer<SocketChannel>() {
 					@Override
-					protected void initChannel(SocketChannel ch) throws Exception {
+					protected void initChannel(SocketChannel ch) {
 						channelGroup.add(ch);
 
 						ChannelPipeline pipeline = ch.pipeline();
 
-						if (sslHandlerFactory != null) {
+						if (sslEnabled) {
 							// Add SSLHandler if SSL is enabled
 							pipeline.addLast(SSL_HANDLER_NAMRE, sslHandlerFactory.create(ch.alloc()));
 						}
@@ -282,12 +223,7 @@ class BasicHttyServer implements HttyServer {
 						}
 						pipeline.addLast(CONTENT_COMPRESSOR_HANDLER_NAME, new HttpContentCompressor());
 						pipeline.addLast(CHUNKED_WRITE_HANDLER, new ChunkedWriteHandler());
-						pipeline.addLast("httyHttpHandler", httyHttpHandler);
-
-						if (pipelineModifier != null) {
-							pipelineModifier.modify(pipeline);
-						}
-
+						pipeline.addLast(HTTP_HANDLER_NAME, httyHttpHandler);
 					}
 				});
 
@@ -353,17 +289,6 @@ class BasicHttyServer implements HttyServer {
 			// there is nothing much can be done from the caller side
 			LOG.warn("Exception raised when shutting down executor", ex);
 		}
-	}
-
-
-	private ChannelPipeline addLast(ChannelPipeline pipeline, EventExecutorGroup group,
-									String handlerName, ChannelHandler handler) {
-		if (group == null) {
-			pipeline.addLast(handlerName, handler);
-		} else {
-			pipeline.addLast(group, handlerName, handler);
-		}
-		return pipeline;
 	}
 
 	public enum State {

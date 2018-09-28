@@ -2,7 +2,6 @@ package com.github.cjqcn.htty.sample.exception;
 
 import com.github.cjqcn.htty.core.HttyServerBuilder;
 import com.github.cjqcn.htty.core.common.ExceptionHandler;
-import com.github.cjqcn.htty.core.common.HttyContext;
 import com.github.cjqcn.htty.core.http.HttyMethod;
 import com.github.cjqcn.htty.core.http.HttyRequest;
 import com.github.cjqcn.htty.core.http.HttyResponse;
