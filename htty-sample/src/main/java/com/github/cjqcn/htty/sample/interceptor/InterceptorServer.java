@@ -2,6 +2,8 @@ package com.github.cjqcn.htty.sample.interceptor;
 
 import com.github.cjqcn.htty.core.HttyServerBuilder;
 import com.github.cjqcn.htty.core.common.HttyContext;
+import com.github.cjqcn.htty.core.http.HttyRequest;
+import com.github.cjqcn.htty.core.http.HttyResponse;
 import com.github.cjqcn.htty.core.interceptor.HttyInterceptor;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
@@ -24,13 +26,13 @@ public class InterceptorServer {
 	static class PermissionInterceptor implements HttyInterceptor {
 
 		@Override
-		public boolean preHandle(HttyContext httyContext) {
-			httyContext.httyResponse().sendString(FORBIDDEN, "无权限");
+		public boolean preHandle(HttyRequest request, HttyResponse response) {
+			response.sendString(FORBIDDEN, "无权限");
 			return false;
 		}
 
 		@Override
-		public void postHandle(HttyContext httyContext) {
+		public void postHandle(HttyRequest request, HttyResponse response) {
 
 		}
 	}

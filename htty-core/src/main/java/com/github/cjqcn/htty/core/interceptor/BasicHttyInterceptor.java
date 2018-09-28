@@ -1,8 +1,8 @@
 package com.github.cjqcn.htty.core.interceptor;
 
-import com.github.cjqcn.htty.core.common.HttyContext;
 import com.github.cjqcn.htty.core.common.HttyResourceHolder;
-import com.github.cjqcn.htty.core.router.BasicHttyRouter;
+import com.github.cjqcn.htty.core.http.HttyRequest;
+import com.github.cjqcn.htty.core.http.HttyResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,23 +14,24 @@ import org.slf4j.LoggerFactory;
 public class BasicHttyInterceptor implements HttyInterceptor {
 
 
-	private static final Logger LOG = LoggerFactory.getLogger(BasicHttyRouter.class);
+	private static final Logger LOG = LoggerFactory.getLogger(BasicHttyInterceptor.class);
 
 	private final HttyResourceHolder httpResourceHolder;
 	private Iterable<? extends HttyInterceptor> httyInterceptors;
 
 	public BasicHttyInterceptor(final HttyResourceHolder httpResourceHolder) {
+		LOG.info("init BasicHttyInterceptor");
 		this.httpResourceHolder = httpResourceHolder;
 		this.httyInterceptors = httpResourceHolder.getHttyInterceptors();
 	}
 
 	@Override
-	public boolean preHandle(HttyContext httyContext) {
+	public boolean preHandle(HttyRequest request, HttyResponse response) {
 		if (!hasHttpInterceptors()) {
 			return true;
 		}
 		for (HttyInterceptor httyInterceptor : httyInterceptors) {
-			if (!httyInterceptor.preHandle(httyContext)) {
+			if (!httyInterceptor.preHandle(request, response)) {
 				return false;
 			}
 		}
@@ -38,17 +39,18 @@ public class BasicHttyInterceptor implements HttyInterceptor {
 	}
 
 	@Override
-	public void postHandle(HttyContext httyContext) {
+	public void postHandle(HttyRequest request, HttyResponse response) {
 		if (!hasHttpInterceptors()) {
 			return;
 		}
-		httyInterceptors.forEach(x -> x.postHandle(httyContext));
+		httyInterceptors.forEach(x -> x.postHandle(request, response));
 	}
 
 	private boolean hasHttpInterceptors() {
 		if (httyInterceptors != null) {
 			return true;
-		} else
+		} else {
 			return false;
+		}
 	}
 }

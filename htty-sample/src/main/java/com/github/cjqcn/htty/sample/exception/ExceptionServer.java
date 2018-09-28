@@ -42,9 +42,10 @@ public class ExceptionServer {
 	}
 
 	static class MyExceptionHandler implements ExceptionHandler {
+
 		@Override
-		public void handle(Exception ex, HttyContext httyContext) {
-			httyContext.httyResponse().sendString(HttpResponseStatus.INTERNAL_SERVER_ERROR, "服务出错");
+		public void handle(Exception ex, HttyRequest request, HttyResponse response) {
+			response.sendString(HttpResponseStatus.INTERNAL_SERVER_ERROR, "服务出错");
 		}
 	}
 }

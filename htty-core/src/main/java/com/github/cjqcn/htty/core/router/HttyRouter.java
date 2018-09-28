@@ -1,8 +1,8 @@
 package com.github.cjqcn.htty.core.router;
 
-import com.github.cjqcn.htty.core.common.HttyContext;
-import com.github.cjqcn.htty.core.worker.HttyWorkerWrapper;
+import com.github.cjqcn.htty.core.http.HttyRequest;
+import com.github.cjqcn.htty.core.worker.HttyWorker;
 
 public interface HttyRouter {
-	HttyWorkerWrapper route(HttyContext httyContext) throws Exception;
+	HttyWorker route(HttyRequest request) throws Exception;
 }

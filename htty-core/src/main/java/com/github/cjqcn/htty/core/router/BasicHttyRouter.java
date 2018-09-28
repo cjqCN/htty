@@ -2,6 +2,7 @@ package com.github.cjqcn.htty.core.router;
 
 import com.github.cjqcn.htty.core.common.*;
 import com.github.cjqcn.htty.core.http.HttyHandler;
+import com.github.cjqcn.htty.core.http.HttyRequest;
 import com.github.cjqcn.htty.core.worker.HttyWorker;
 import com.github.cjqcn.htty.core.worker.HttyWorkerWrapper;
 import com.github.cjqcn.htty.core.worker.MethodNotSupportHttyWorker;
@@ -25,22 +26,23 @@ public class BasicHttyRouter implements HttyRouter {
 	private static MethodNotSupportHttyWorker methodNotSupportHttyWorker = new MethodNotSupportHttyWorker();
 
 	public BasicHttyRouter(final HttyResourceHolder httpResourceHolder) {
+		LOG.info("init BasicHttyRouter");
 		this.httpResourceHolder = httpResourceHolder;
 		initHttyWorker(httpResourceHolder.getHttyHandlers());
 	}
 
 	@Override
-	public HttyWorkerWrapper route(HttyContext httyContext) {
-		return HttyWorkerWrapper.create(_route(httyContext), httyContext);
+	public HttyWorker route(HttyRequest request) {
+		return _route(request);
 	}
 
-	private HttyWorker _route(HttyContext httyContext) {
+	private HttyWorker _route(HttyRequest request) {
 		if (!hasHttyWorkers()) {
 			return notFoundHttyWorker;
 		}
 		for (HttyWorker httyWorker : httyWorkers) {
-			if (pathMatcher.mathes(httyContext.httyRequest(), httyWorker)) {
-				if (methodMatcher.mathes(httyContext.httyRequest(), httyWorker)) {
+			if (pathMatcher.mathes(request, httyWorker)) {
+				if (methodMatcher.mathes(request, httyWorker)) {
 					return httyWorker;
 				} else {
 					return methodNotSupportHttyWorker;

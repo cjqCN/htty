@@ -1,6 +1,8 @@
 package com.github.cjqcn.htty.core;
 
 import com.github.cjqcn.htty.core.common.*;
+import com.github.cjqcn.htty.core.dispatcher.BasicHttyDispatcher;
+import com.github.cjqcn.htty.core.dispatcher.HttyDispatcher;
 import com.github.cjqcn.htty.core.http.ChannelPipelineModifier;
 import com.github.cjqcn.htty.core.http.HttyHandler;
 import com.github.cjqcn.htty.core.interceptor.BasicHttyInterceptor;
@@ -249,11 +251,14 @@ class BasicHttyServer implements HttyServer {
 				createDaemonThreadFactory(serverName + "-worker-thread"));
 		ServerBootstrap bootstrap = new ServerBootstrap();
 
-		AuditHandler auditHandler = new AuditHandler();
-		HttyWrappedHandler httyWrappedHandler = new HttyWrappedHandler();
-		HttyInterceptorHandler httyInterceptorHandler = new HttyInterceptorHandler(httyInterceptor, exceptionHandler);
-		HttyRouterHandler httyRouterHandler = new HttyRouterHandler(httyRouter);
-		HttyDispatcherHandler httyDispatcherHandler = new HttyDispatcherHandler(exceptionHandler);
+		AuditRecorder _auditRecorder = new BasicAuditRecorder();
+		HttyInterceptor _httyInterceptor = httyInterceptor;
+		HttyRouter _httyRouter = httyRouter;
+		HttyDispatcher _httyDispatcher = new BasicHttyDispatcher();
+		ExceptionHandler _exceptionHandler = exceptionHandler;
+
+		HttyHttpHandler httyHttpHandler = new HttyHttpHandler(_auditRecorder, _httyInterceptor, _httyRouter,
+				_httyDispatcher, _exceptionHandler);
 
 		bootstrap
 				.group(bossGroup, workerGroup)
@@ -264,7 +269,6 @@ class BasicHttyServer implements HttyServer {
 						channelGroup.add(ch);
 
 						ChannelPipeline pipeline = ch.pipeline();
-						pipeline.addLast(AUDITER_HANDLER_NAME, auditHandler);
 
 						if (sslHandlerFactory != null) {
 							// Add SSLHandler if SSL is enabled
@@ -278,13 +282,7 @@ class BasicHttyServer implements HttyServer {
 						}
 						pipeline.addLast(CONTENT_COMPRESSOR_HANDLER_NAME, new HttpContentCompressor());
 						pipeline.addLast(CHUNKED_WRITE_HANDLER, new ChunkedWriteHandler());
-						pipeline.addLast(HTTP_WRAPPED_HANDLER, httyWrappedHandler);
-						pipeline.addLast(INTERCEPTOR_HANDLER_NAME, httyInterceptorHandler);
-
-						addLast(pipeline, routerEventExecutorGroup, ROUTER_HANDLER_NAME, httyRouterHandler);
-
-						addLast(pipeline, execEventExecutorGroup, DISPATCHER_HANDLER_NAME,
-								httyDispatcherHandler);
+						pipeline.addLast("httyHttpHandler", httyHttpHandler);
 
 						if (pipelineModifier != null) {
 							pipelineModifier.modify(pipeline);
