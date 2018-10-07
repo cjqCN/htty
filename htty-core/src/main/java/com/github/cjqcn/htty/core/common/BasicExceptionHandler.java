@@ -11,8 +11,9 @@ import io.netty.handler.codec.http.HttpResponseStatus;
  **/
 public class BasicExceptionHandler implements ExceptionHandler {
 
-	@Override
-	public void handle(Exception ex, HttyRequest request, HttyResponse response) {
-		response.sendString(HttpResponseStatus.INTERNAL_SERVER_ERROR, ex.toString());
-	}
+    @Override
+    public void handle(Exception ex, HttyRequest request, HttyResponse response) {
+        response.sendString(HttpResponseStatus.INTERNAL_SERVER_ERROR, ex.toString());
+        ex.printStackTrace();
+    }
 }

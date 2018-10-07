@@ -10,12 +10,12 @@ import com.github.cjqcn.htty.core.worker.HttyWorker;
  **/
 public class BasicPathMatcher implements PathMatcher {
 
-	public static final PathMatcher instance = new BasicPathMatcher();
+    public static final PathMatcher instance = new BasicPathMatcher();
 
-	private static final PathUtil pathUtil = new PathUtil();
+    private static final PathUtil pathUtil = new PathUtil();
 
-	@Override
-	public boolean mathes(HttyRequest httyRequest, HttyWorker httyWorker) {
-		return pathUtil.match(httyWorker.path(), httyRequest.uri());
-	}
+    @Override
+    public boolean mathes(HttyRequest httyRequest, HttyWorker httyWorker) {
+        return pathUtil.match(httyWorker.path(), httyRequest.uri()) || pathUtil.match(httyWorker.path() + "?**", httyRequest.uri());
+    }
 }

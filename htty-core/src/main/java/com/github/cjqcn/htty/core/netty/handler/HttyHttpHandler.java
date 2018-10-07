@@ -25,70 +25,70 @@ import org.slf4j.LoggerFactory;
 @ChannelHandler.Sharable
 public class HttyHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
-	private static final Logger LOG = LoggerFactory.getLogger(HttyHttpHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttyHttpHandler.class);
 
-	private AuditRecorder auditRecorder;
-	private HttyInterceptor httyInterceptor;
-	private HttyRouter httyRouter;
-	private HttyDispatcher httyDispatcher;
-	private ExceptionHandler exceptionHandler;
-	private boolean sslEnabled;
+    private AuditRecorder auditRecorder;
+    private HttyInterceptor httyInterceptor;
+    private HttyRouter httyRouter;
+    private HttyDispatcher httyDispatcher;
+    private ExceptionHandler exceptionHandler;
+    private boolean sslEnabled;
 
-	public HttyHttpHandler(AuditRecorder auditRecorder, HttyInterceptor httyInterceptor,
-						   HttyRouter httyRouter, HttyDispatcher httyDispatcher,
-						   ExceptionHandler exceptionHandler, boolean sslEnabled) {
-		this.auditRecorder = auditRecorder;
-		this.httyInterceptor = httyInterceptor;
-		this.httyRouter = httyRouter;
-		this.httyDispatcher = httyDispatcher;
-		this.exceptionHandler = exceptionHandler;
-		this.sslEnabled = sslEnabled;
-		verify();
-	}
+    public HttyHttpHandler(AuditRecorder auditRecorder, HttyInterceptor httyInterceptor,
+                           HttyRouter httyRouter, HttyDispatcher httyDispatcher,
+                           ExceptionHandler exceptionHandler, boolean sslEnabled) {
+        this.auditRecorder = auditRecorder;
+        this.httyInterceptor = httyInterceptor;
+        this.httyRouter = httyRouter;
+        this.httyDispatcher = httyDispatcher;
+        this.exceptionHandler = exceptionHandler;
+        this.sslEnabled = sslEnabled;
+        verify();
+    }
 
-	@Override
-	protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest fullHttpRequest) {
-		HttyRequest request = new BasicHttyRequest(fullHttpRequest);
-		HttyResponse response = new BasicHttyResponse(ctx.channel(), sslEnabled);
-		httyHandle(request, response);
-	}
-
-
-	public void httyHandle(HttyRequest request, HttyResponse response) {
-		try {
-			_httyHandle(request, response);
-		} catch (Exception ex) {
-			exceptionHandler.handle(ex, request, response);
-		}
-	}
-
-	public void _httyHandle(HttyRequest request, HttyResponse response) throws Exception {
-		auditRecorder.record(request);
-		if (!httyInterceptor.preHandle(request, response)) {
-			LOG.debug("preHandle returns false, connection is closed");
-			return;
-		}
-		HttyWorker httyWorker = httyRouter.route(request);
-		httyDispatcher.dispatch(httyWorker, request, response);
-		httyInterceptor.postHandle(request, response);
-	}
+    @Override
+    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest fullHttpRequest) {
+        HttyRequest request = new BasicHttyRequest(fullHttpRequest);
+        HttyResponse response = new BasicHttyResponse(ctx.channel(), sslEnabled);
+        httyHandle(request, response);
+    }
 
 
-	private void verify() {
-		if (auditRecorder == null) {
-			throw new NullPointerException("auditRecorder is null");
-		}
-		if (httyInterceptor == null) {
-			throw new NullPointerException("httyInterceptor is null");
-		}
-		if (httyRouter == null) {
-			throw new NullPointerException("httyRouter is null");
-		}
-		if (httyDispatcher == null) {
-			throw new NullPointerException("httyDispatcher is null");
-		}
-		if (exceptionHandler == null) {
-			throw new NullPointerException("exceptionHandler is null");
-		}
-	}
+    public void httyHandle(HttyRequest request, HttyResponse response)   {
+        try {
+            _httyHandle(request, response);
+        } catch (Exception ex) {
+            exceptionHandler.handle(ex, request, response);
+        }
+    }
+
+    public void _httyHandle(HttyRequest request, HttyResponse response) throws Exception {
+        auditRecorder.record(request);
+        if (!httyInterceptor.preHandle(request, response)) {
+            LOG.debug("preHandle returns false, connection is closed");
+            return;
+        }
+        HttyWorker httyWorker = httyRouter.route(request);
+        httyDispatcher.dispatch(httyWorker, request, response);
+        httyInterceptor.postHandle(request, response);
+    }
+
+
+    private void verify() {
+        if (auditRecorder == null) {
+            throw new NullPointerException("auditRecorder is null");
+        }
+        if (httyInterceptor == null) {
+            throw new NullPointerException("httyInterceptor is null");
+        }
+        if (httyRouter == null) {
+            throw new NullPointerException("httyRouter is null");
+        }
+        if (httyDispatcher == null) {
+            throw new NullPointerException("httyDispatcher is null");
+        }
+        if (exceptionHandler == null) {
+            throw new NullPointerException("exceptionHandler is null");
+        }
+    }
 }

@@ -1,6 +1,8 @@
 package com.github.cjqcn.htty.core.http;
 
 
+import com.github.cjqcn.htty.core.http.cookie.HttyCookie;
+
 public interface HttyRequest {
 
 	HttyMethod method();
@@ -9,7 +11,7 @@ public interface HttyRequest {
 
 	String header(String name);
 
-	Cookie[] cookies();
+	HttyCookie[] cookies();
 
 	String param(String name);
 
