@@ -3,17 +3,23 @@ package com.github.cjqcn.htty.core.http;
 
 import com.github.cjqcn.htty.core.http.cookie.HttyCookie;
 
+import java.util.Map;
+
 public interface HttyRequest {
 
-	HttyMethod method();
+    HttyMethod method();
 
-	String uri();
+    String uri();
 
-	String header(String name);
+    Map<String, String> headers();
 
-	HttyCookie[] cookies();
+    String header(String name);
 
-	String param(String name);
+    HttyCookie[] cookies();
 
-	String context();
+    Map<String, String> params();
+
+    String param(String name);
+
+    String context();
 }

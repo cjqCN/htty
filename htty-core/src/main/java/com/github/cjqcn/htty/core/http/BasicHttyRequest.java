@@ -12,8 +12,7 @@ import io.netty.util.CharsetUtil;
 import javax.ws.rs.NotSupportedException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 public class BasicHttyRequest implements HttyRequest {
 
@@ -21,12 +20,15 @@ public class BasicHttyRequest implements HttyRequest {
 
     private volatile HttyCookie[] cookies;
 
-    private volatile QueryStringDecoder queryStringDecoder;
+    private volatile Map<String, String> headers;
+
+    private volatile Map<String, String> params;
 
     public BasicHttyRequest(FullHttpRequest fullHttpRequest) {
         this.fullHttpRequest = fullHttpRequest;
         cookies = null;
-        queryStringDecoder = null;
+        headers = null;
+        params = null;
     }
 
     @Override
@@ -49,12 +51,25 @@ public class BasicHttyRequest implements HttyRequest {
         if (fullHttpRequest.method() == HttpMethod.OPTIONS) {
             return HttyMethod.OPTIONS;
         }
-        throw new NotSupportedException("不支持该方法");
+        throw new NotSupportedException("不支持该方法:" + fullHttpRequest.method().name());
     }
 
     @Override
     public String uri() {
         return fullHttpRequest.uri();
+    }
+
+
+    @Override
+    public Map<String, String> headers() {
+        if (headers == null) {
+            Set<String> names = fullHttpRequest.headers().names();
+            headers = new HashMap<>(names.size());
+            names.forEach(x -> {
+                headers.put(x, fullHttpRequest.headers().get(x));
+            });
+        }
+        return headers;
     }
 
     @Override
@@ -71,11 +86,16 @@ public class BasicHttyRequest implements HttyRequest {
     }
 
     @Override
-    public String param(String name) {
+    public Map<String, String> params() {
         if (!isDecodeParam()) {
             decodeParam();
         }
-        return Optional.ofNullable(queryStringDecoder).map(QueryStringDecoder::parameters).map(x -> x.get(name)).map(x -> x.get(0)).orElse(null);
+        return params;
+    }
+
+    @Override
+    public String param(String name) {
+        return params().get(name);
     }
 
     @Override
@@ -91,10 +111,18 @@ public class BasicHttyRequest implements HttyRequest {
     }
 
     private void decodeParam() {
+        QueryStringDecoder queryStringDecoder;
         try {
             queryStringDecoder = new QueryStringDecoder(URLDecoder.decode(uri(), "utf-8"));
         } catch (UnsupportedEncodingException e) {
             queryStringDecoder = new QueryStringDecoder(uri());
+        }
+        Map<String, List<String>> tmp = queryStringDecoder.parameters();
+        if (tmp == null || tmp.isEmpty()) {
+            params = Collections.emptyMap();
+        } else {
+            params = new HashMap<>(tmp.size());
+            tmp.forEach((k, v) -> params.put(k, v.get(0)));
         }
     }
 
@@ -104,7 +132,7 @@ public class BasicHttyRequest implements HttyRequest {
 
 
     private boolean isDecodeParam() {
-        return queryStringDecoder != null;
+        return params != null;
     }
 
 
