@@ -1,6 +1,7 @@
 package com.github.cjqcn.htty.sample.helloworld;
 
 import com.github.cjqcn.htty.core.HttyServerBuilder;
+import com.github.cjqcn.htty.core.common.HttyContext;
 import com.github.cjqcn.htty.core.http.HttyMethod;
 import com.github.cjqcn.htty.core.http.HttyRequest;
 import com.github.cjqcn.htty.core.http.HttyResponse;
@@ -15,28 +16,35 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
  **/
 public class HelloWorldServer {
 
-    public static void main(String[] args) throws Exception {
-        HttyServerBuilder.builder("HelloWorldServer")
-                .setPort(8080)
-                .addHttyHandler(new HelloWorldHandler())
-                .build().start();
-    }
+	public static void main(String[] args) throws Exception {
+		HttyServerBuilder.builder("HelloWorldServer")
+				.setPort(8080)
+				.addHttyHandler(new HelloWorldHandler())
+				.build().start();
+	}
 
 
-    static class HelloWorldHandler implements HttyWorker {
-        @Override
-        public void handle(HttyRequest httyRequest, HttyResponse httyResponse) {
-            httyResponse.sendString(OK, "hello world");
-        }
+	static class HelloWorldHandler implements HttyWorker {
+		@Override
+		public void handle(HttyRequest httyRequest, HttyResponse httyResponse) {
 
-        @Override
-        public HttyMethod[] HttpMethod() {
-            return HttyMethod.ALL_HTTP_METHOD;
-        }
+			System.out.println("------------------httyRequest.params()------------------------");
+			System.out.println(httyRequest.params());
 
-        @Override
-        public String path() {
-            return "/hello";
-        }
-    }
+			System.out.println("-------------HttyContext.httyRequest().params()---------------");
+			System.out.println(HttyContext.httyRequest().params());
+
+			httyResponse.sendString(OK, "hello world");
+		}
+
+		@Override
+		public HttyMethod[] HttpMethod() {
+			return HttyMethod.ALL_HTTP_METHOD;
+		}
+
+		@Override
+		public String path() {
+			return "/hello";
+		}
+	}
 }
