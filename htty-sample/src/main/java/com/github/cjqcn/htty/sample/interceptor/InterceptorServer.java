@@ -4,8 +4,10 @@ import com.github.cjqcn.htty.core.HttyServerBuilder;
 import com.github.cjqcn.htty.core.http.HttyRequest;
 import com.github.cjqcn.htty.core.http.HttyResponse;
 import com.github.cjqcn.htty.core.interceptor.HttyInterceptor;
+import com.github.cjqcn.htty.core.interceptor.adapter.AbstractHttyInterceptorAdapter;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
 /**
  * @description:
@@ -18,6 +20,7 @@ public class InterceptorServer {
 		HttyServerBuilder.builder("InterceptorServer")
 				.setPort(8081)
 				.addHttyInterceptor(new PermissionInterceptor())
+				.addHttyInterceptor(new HelloInterceptor().setPriority(200).includeUrlPatterns("/hello/**"))
 				.build().start();
 	}
 
@@ -35,4 +38,19 @@ public class InterceptorServer {
 
 		}
 	}
+
+	static class HelloInterceptor extends AbstractHttyInterceptorAdapter {
+
+		@Override
+		public boolean preHandle(HttyRequest request, HttyResponse response) {
+			response.sendString(OK, "hellworld");
+			return false;
+		}
+
+		@Override
+		public void postHandle(HttyRequest request, HttyResponse response) {
+
+		}
+	}
+
 }
