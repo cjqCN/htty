@@ -5,9 +5,9 @@ import com.github.cjqcn.htty.core.http.HttyRequest;
 import com.github.cjqcn.htty.core.http.HttyResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
-public class NotFoundHttyWorker implements HttyWorker {
+public class NotFoundHttyWorker implements InternalWorker {
 	@Override
-	public void handle(HttyRequest httyRequest, HttyResponse httyResponse) throws Exception {
+	public void handle(HttyRequest httyRequest, HttyResponse httyResponse) {
 		httyResponse.sendStatus(HttpResponseStatus.NOT_FOUND);
 	}
 

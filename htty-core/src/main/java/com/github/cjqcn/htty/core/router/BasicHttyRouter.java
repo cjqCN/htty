@@ -37,7 +37,7 @@ public class BasicHttyRouter implements HttyRouter {
 			return notFoundHttyWorker;
 		}
 		for (HttyWorker httyWorker : httyWorkers) {
-			if (pathMatcher.mathes(request, httyWorker)) {
+			if (pathMatcher.match(httyWorker.path(), request.uri())) {
 				if (methodMatcher.mathes(request, httyWorker)) {
 					return httyWorker;
 				} else {

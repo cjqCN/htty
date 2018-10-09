@@ -10,12 +10,12 @@ import io.netty.handler.codec.http.HttpResponseStatus;
  * @author: chenjinquan
  * @create: 2018-09-11 21:03
  **/
-public class MethodNotSupportHttyWorker implements HttyWorker {
+public class MethodNotSupportHttyWorker implements InternalWorker {
 
 	private static final String resStrTemplate = "Request method %s not supported.";
 
 	@Override
-	public void handle(HttyRequest httyRequest, HttyResponse httyResponse) throws Exception {
+	public void handle(HttyRequest httyRequest, HttyResponse httyResponse) {
 		httyResponse.sendString(HttpResponseStatus.METHOD_NOT_ALLOWED,
 				String.format(resStrTemplate, httyRequest.method()));
 	}

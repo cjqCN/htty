@@ -6,7 +6,7 @@ import com.github.cjqcn.htty.core.common.ExceptionHandler;
 import com.github.cjqcn.htty.core.common.SSLHandlerFactory;
 import com.github.cjqcn.htty.core.dispatcher.BasicHttyDispatcher;
 import com.github.cjqcn.htty.core.dispatcher.HttyDispatcher;
-import com.github.cjqcn.htty.core.interceptor.BasicHttyInterceptor;
+import com.github.cjqcn.htty.core.interceptor.BasicHttyInterceptorContainer;
 import com.github.cjqcn.htty.core.interceptor.HttyInterceptor;
 import com.github.cjqcn.htty.core.netty.handler.HttyHttpHandler;
 import com.github.cjqcn.htty.core.router.BasicHttyRouter;
@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadFactory;
@@ -89,8 +90,8 @@ class BasicHttyServer implements HttyServer {
 	BasicHttyServer(final String serverName, final int bossThreadPoolSize, final int workerThreadPoolSize,
 					final Map<ChannelOption, Object> channelConfigs,
 					final Map<ChannelOption, Object> childChannelConfigs,
-					Iterable<? extends HttyWorker> httyWorkers,
-					Iterable<? extends HttyInterceptor> httpInterceptors,
+					Collection<HttyWorker> httyWorkers,
+					Collection<HttyInterceptor> httpInterceptors,
 					final int httpChunkLimit, final ExceptionHandler exceptionHandler,
 					final SSLHandlerFactory sslHandlerFactory, final CorsConfig corsConfig,
 					final InetSocketAddress bindAddress) {
@@ -100,7 +101,7 @@ class BasicHttyServer implements HttyServer {
 		this.channelConfigs = channelConfigs;
 		this.childChannelConfigs = childChannelConfigs;
 		this.auditRecorder = new BasicAuditRecorder();
-		this.httyInterceptor = new BasicHttyInterceptor(httpInterceptors);
+		this.httyInterceptor = new BasicHttyInterceptorContainer(httpInterceptors);
 		this.httyRouter = new BasicHttyRouter(httyWorkers);
 		this.httyDispatcher = new BasicHttyDispatcher();
 		this.httpChunkLimit = httpChunkLimit;
