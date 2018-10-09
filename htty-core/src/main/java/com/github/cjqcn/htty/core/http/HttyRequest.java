@@ -21,5 +21,5 @@ public interface HttyRequest {
 
     String param(String name);
 
-    String context();
+    String content();
 }
