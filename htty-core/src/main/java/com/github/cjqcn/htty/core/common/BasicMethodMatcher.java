@@ -15,7 +15,7 @@ public class BasicMethodMatcher implements MethodMatcher {
 	public static final MethodMatcher instance = new BasicMethodMatcher();
 
 	@Override
-	public boolean mathes(HttyRequest httyRequest, HttyWorker httyWorker) {
+	public boolean match(HttyRequest httyRequest, HttyWorker httyWorker) {
 		try {
 			HttyMethod httyMethod = httyRequest.method();
 			HttyMethod[] supportedHttyMethod = httyWorker.HttpMethod();

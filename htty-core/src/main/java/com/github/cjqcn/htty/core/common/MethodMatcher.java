@@ -9,5 +9,5 @@ import com.github.cjqcn.htty.core.worker.HttyWorker;
  * @create: 2018-09-11 23:07
  **/
 public interface MethodMatcher {
-	boolean mathes(HttyRequest httyRequest, HttyWorker httyWorker);
+	boolean match(HttyRequest httyRequest, HttyWorker httyWorker);
 }
