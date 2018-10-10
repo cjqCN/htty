@@ -99,7 +99,7 @@ public class BasicHttyRequest implements HttyRequest {
     }
 
     @Override
-    public String context() {
+    public String content() {
         return fullHttpRequest.content().toString(CharsetUtil.UTF_8);
     }
 
