@@ -189,12 +189,15 @@ class BasicHttyServer implements HttyServer {
 	 * Creates the server bootstrap.
 	 */
 	private ServerBootstrap createBootstrap(final ChannelGroup channelGroup) {
-		LOG.debug("Init bossGroup, size:{}", bossThreadPoolSize);
+
 		EventLoopGroup bossGroup = new NioEventLoopGroup(bossThreadPoolSize,
-				createDaemonThreadFactory(serverName + "-boss-thread"));
-		LOG.debug("Init workerGroup, size:{}", workerThreadPoolSize);
+				createThreadFactory(serverName + "-boss-thread-%d"));
+		LOG.info("Init bossGroup, size:{}", ((NioEventLoopGroup) bossGroup).executorCount());
+
 		EventLoopGroup workerGroup = new NioEventLoopGroup(workerThreadPoolSize,
-				createDaemonThreadFactory(serverName + "-worker-thread"));
+				createThreadFactory(serverName + "-worker-thread-%d"));
+		LOG.info("Init workerGroup, size:{}", ((NioEventLoopGroup) workerGroup).executorCount());
+
 		ServerBootstrap bootstrap = new ServerBootstrap();
 
 		final boolean sslEnabled = (sslHandlerFactory != null);
@@ -249,7 +252,7 @@ class BasicHttyServer implements HttyServer {
 		throw new UnsupportedOperationException("The server does not support recover.");
 	}
 
-	private ThreadFactory createDaemonThreadFactory(final String nameFormat) {
+	private ThreadFactory createThreadFactory(final String nameFormat) {
 		return new ThreadFactory() {
 			private final AtomicInteger count = new AtomicInteger();
 
@@ -257,7 +260,7 @@ class BasicHttyServer implements HttyServer {
 			public Thread newThread(Runnable r) {
 				Thread t = new Thread(r);
 				t.setName(String.format(nameFormat, count.getAndIncrement()));
-				t.setDaemon(true);
+				t.setPriority(10);
 				return t;
 			}
 		};

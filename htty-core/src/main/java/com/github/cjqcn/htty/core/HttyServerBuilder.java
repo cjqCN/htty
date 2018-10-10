@@ -17,10 +17,9 @@ import java.util.Map;
 
 public class HttyServerBuilder {
 
-	private static final int AVAILABLE_PROCESSORS_NUM = Math.max(1, Runtime.getRuntime().availableProcessors());
 	private static final int DEFAULT_BOSS_THREAD_POOL_SIZE = 1;
-	private static final int DEFAULT_WORKER_THREAD_POOL_SIZE = AVAILABLE_PROCESSORS_NUM * 2;
-	private static final int DEFAULT_CONNECTION_BACKLOG = 1000;
+	private static final int DEFAULT_WORKER_THREAD_POOL_SIZE = 0;
+	private static final int DEFAULT_CONNECTION_BACKLOG = 1024;
 	private static final String DEFAULT_SERVER_HOST = "localhost";
 	private static final int DEFAULT_SERVER_PORT = 8640;
 
