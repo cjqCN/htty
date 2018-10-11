@@ -5,8 +5,11 @@ import com.github.cjqcn.htty.core.http.HttyResponse;
 
 public interface HttyInterceptor {
 
-	boolean preHandle(HttyRequest request, HttyResponse response);
+    default boolean preHandle(HttyRequest request, HttyResponse response) {
+        return true;
+    }
 
-	void postHandle(HttyRequest request, HttyResponse response);
+    default void postHandle(HttyRequest request, HttyResponse response) {
+    }
 
 }
