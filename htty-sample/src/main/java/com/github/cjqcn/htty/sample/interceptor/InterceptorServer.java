@@ -19,7 +19,7 @@ public class InterceptorServer {
 	public static void main(String[] args) throws Exception {
 		HttyServerBuilder.builder("InterceptorServer")
 				.setPort(8081)
-				.addHttyInterceptor(new PermissionInterceptor())
+				.addHttyInterceptor(new PermissionInterceptor()) // 默认优先级是 1024
 				.addHttyInterceptor(new HelloInterceptor().setPriority(200).includeUrlPatterns("/hello/**"))
 				.build().start();
 	}
