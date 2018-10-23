@@ -1,4 +1,4 @@
 package com.github.cjqcn.htty.annotation.support;
 
-public interface HttyContext {
+public @interface HttyContext {
 }

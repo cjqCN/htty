@@ -1,4 +1,4 @@
 package com.github.cjqcn.htty.annotation.support;
 
-public interface HttyCookie {
+public @interface HttyCookie {
 }
