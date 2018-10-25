@@ -46,9 +46,9 @@ public class DefaultWorkBuildHelper implements WorkBuildHelper {
         if (methodHttyRequestMappingMap.isEmpty()) {
             return Collections.EMPTY_LIST;
         }
-        Object instance = null;
+        Object instance;
         try {
-            instance = claz.newInstance();
+            instance = claz.getDeclaredConstructor().newInstance();
         } catch (Exception ex) {
             LOG.warn("Class:{} fail to instance", claz.getName(), ex);
             return Collections.EMPTY_LIST;
