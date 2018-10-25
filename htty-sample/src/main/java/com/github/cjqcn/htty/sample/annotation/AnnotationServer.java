@@ -13,13 +13,12 @@ import java.util.Collection;
  **/
 public class AnnotationServer {
 
-	public static void main(String[] args) throws Exception {
-		Collection<HttyWorker> httyWorkers = new DefaultWorkBuildHelper()
-				.scanAndBuild("com.github.cjqcn.htty.sample.annotation.work");
-		HttyServerBuilder.builder("AnnotationServer")
-				.setPort(8080)
-				.addHttyHandler(httyWorkers)
-				.build().start();
-	}
+    public static void main(String[] args) throws Exception {
+        HttyServerBuilder.builder("AnnotationServer")
+                .setPort(8080)
+                .addHttyHandler(DefaultWorkBuildHelper.instance
+                        .scanAndBuild("com.github.cjqcn.htty.sample.annotation.work"))
+                .build().start();
+    }
 
 }

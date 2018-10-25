@@ -24,6 +24,12 @@ public class DefaultWorkBuildHelper implements WorkBuildHelper {
 
     private static final Logger LOG = LoggerFactory.getLogger(DefaultWorkBuildHelper.class);
 
+
+    public static final WorkBuildHelper instance = new DefaultWorkBuildHelper();
+
+    private DefaultWorkBuildHelper() {
+    }
+
     @Override
     public Collection<HttyWorker> scanAndBuild(String packageName) {
         try {
