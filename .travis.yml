@@ -1,0 +1,12 @@
+dist: precise
+
+language: java
+
+jdk:
+  - oraclejdk8
+
+branches:
+  only:
+    - dev
+
+script: mvn test -Dsurefire.redirectTestOutputToFile=false

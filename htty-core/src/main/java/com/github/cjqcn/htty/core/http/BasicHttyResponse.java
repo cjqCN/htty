@@ -237,6 +237,7 @@ public final class BasicHttyResponse extends AbstractHttyResponse {
 			return readChunk(ctx.alloc());
 		}
 
+		@Override
 		public ByteBuf readChunk(ByteBufAllocator allocator) throws Exception {
 			if (isEndOfInput()) {
 				// This shouldn't happen, but just to guard
