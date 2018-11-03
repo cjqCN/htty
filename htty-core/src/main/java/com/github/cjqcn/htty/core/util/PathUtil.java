@@ -1,4 +1,4 @@
-package com.github.cjqcn.htty.core.common;
+package com.github.cjqcn.htty.core.util;
 
 
 import java.util.*;
