@@ -25,6 +25,7 @@ public class HttyServerBuilder {
     private static final int DEFAULT_CONNECTION_BACKLOG = 1024;
     private static final String DEFAULT_SERVER_HOST = "localhost";
     private static final int DEFAULT_SERVER_PORT = 8640;
+    private static final boolean DEFAULT_SHUTDOWN_HOOK = true;
 
     /**
      * 150M
@@ -46,6 +47,7 @@ public class HttyServerBuilder {
     private ExceptionHandler exceptionHandler;
     private CorsConfig corsConfig;
     private int priority;
+    private boolean shutdownHook = DEFAULT_SHUTDOWN_HOOK;
 
     public static HttyServerBuilder builder(String serverName) {
         return new HttyServerBuilder(serverName);
@@ -160,6 +162,11 @@ public class HttyServerBuilder {
         return this;
     }
 
+    public HttyServerBuilder setShutdownHook(boolean shutdownHook) {
+        this.shutdownHook = shutdownHook;
+        return this;
+    }
+
 
     /**
      * Build a {@link HttyServer} with pre-setting
@@ -171,7 +178,7 @@ public class HttyServerBuilder {
         return new BasicHttyServer(serverName, priority, bossThreadPoolSize,
                 workerThreadPoolSize, channelConfigs, childChannelConfigs,
                 httyWorkers, httyInterceptors, httpChunkLimit, exceptionHandler,
-                sslHandlerFactory, corsConfig, bindAddress);
+                sslHandlerFactory, corsConfig, bindAddress, shutdownHook);
     }
 
 

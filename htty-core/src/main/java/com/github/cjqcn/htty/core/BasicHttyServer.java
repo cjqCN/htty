@@ -100,7 +100,8 @@ class BasicHttyServer implements HttyServer {
                     Collection<HttyInterceptor> httpInterceptors,
                     final int httpChunkLimit, final ExceptionHandler exceptionHandler,
                     final SSLHandlerFactory sslHandlerFactory, final CorsConfig corsConfig,
-                    final InetSocketAddress bindAddress) {
+                    final InetSocketAddress bindAddress,
+                    final boolean shutdownHook) {
         this.serverName = serverName;
         this.priority = priority;
         this.bossThreadPoolSize = bossThreadPoolSize;
@@ -117,6 +118,9 @@ class BasicHttyServer implements HttyServer {
         this.corsConfig = corsConfig;
         this.bindAddress = bindAddress;
         this.state = State.ALREADY;
+        if (shutdownHook) {
+            addShutdownHook();
+        }
     }
 
     @Override
@@ -301,7 +305,14 @@ class BasicHttyServer implements HttyServer {
         }
     }
 
-    public enum State {
+    private void addShutdownHook() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() ->
+                stop(), serverName + " shutdownHook"
+        ));
+    }
+
+
+    enum State {
         ALREADY,
         RUNNING,
         STOPPED,
