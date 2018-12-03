@@ -14,13 +14,13 @@
         <dependency>
             <groupId>com.github.cjqcn</groupId>
             <artifactId>htty-core</artifactId>
-            <version>1.0.0</version>
+            <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.github.cjqcn</groupId>
             <artifactId>htty-annotation-support</artifactId>
-            <version>1.0.0</version>
+            <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>
