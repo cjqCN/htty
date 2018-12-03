@@ -114,7 +114,11 @@ public class AnnotationServer {
 <https://github.com/cjqCN/htty/tree/master/htty-sample>
 
 
-## 说明
-本项目持续更新中，有兴趣的朋友也可以加入进来
-
+## 版本说明
+- v1.1.0
+    - 内部优化
+    - 自定义拦截器
+    - 优雅关闭
+- v1.0.0
+    - 基本框架
 
