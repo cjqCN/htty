@@ -2,6 +2,7 @@ package com.github.cjqcn.htty.core.common;
 
 import com.github.cjqcn.htty.core.http.HttyRequest;
 import com.github.cjqcn.htty.core.http.HttyResponse;
+import io.netty.util.concurrent.FastThreadLocal;
 
 /**
  * @description:
@@ -13,8 +14,8 @@ public class HttyContext {
 	public static final String REQUEST_FIELD_NAME = "httyRequestThreadLocal";
 	public static final String RESPONSE_FIELD_NAME = "httyResponseThreadLocal";
 
-	private static ThreadLocal<HttyRequest> httyRequestThreadLocal = new ThreadLocal<>();
-	private static ThreadLocal<HttyResponse> httyResponseThreadLocal = new ThreadLocal<>();
+	private static FastThreadLocal<HttyRequest> httyRequestThreadLocal = new FastThreadLocal<>();
+	private static FastThreadLocal<HttyResponse> httyResponseThreadLocal = new FastThreadLocal<>();
 
 	private HttyContext() {
 	}

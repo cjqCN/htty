@@ -26,6 +26,7 @@ import io.netty.handler.codec.http.cors.CorsConfig;
 import io.netty.handler.codec.http.cors.CorsHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
+import io.netty.util.concurrent.FastThreadLocalThread;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import org.slf4j.Logger;
@@ -268,7 +269,7 @@ class BasicHttyServer implements HttyServer {
 
             @Override
             public Thread newThread(Runnable r) {
-                Thread t = new Thread(r);
+                Thread t = new FastThreadLocalThread(r);
                 t.setName(String.format(nameFormat, count.getAndIncrement()));
                 t.setPriority(priority);
                 return t;

@@ -5,6 +5,7 @@ import com.github.cjqcn.htty.core.http.HttyRequest;
 import com.github.cjqcn.htty.core.http.HttyResponse;
 import com.github.cjqcn.htty.core.interceptor.adapter.HttyInterceptorAdapter;
 import com.github.cjqcn.htty.core.interceptor.adapter.ProxyHttyInterceptorAdapter;
+import io.netty.util.concurrent.FastThreadLocal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,8 +23,8 @@ public class HttyContextInterceptor implements InternalInterceptor {
 
 	private static final Logger LOG = LoggerFactory.getLogger(HttyContextInterceptor.class);
 
-	private ThreadLocal<HttyRequest> httyRequestThreadLocal;
-	private ThreadLocal<HttyResponse> httyResponseThreadLocal;
+	private FastThreadLocal<HttyRequest> httyRequestThreadLocal;
+	private FastThreadLocal<HttyResponse> httyResponseThreadLocal;
 
 	public HttyContextInterceptor() {
 		init();
@@ -36,11 +37,11 @@ public class HttyContextInterceptor implements InternalInterceptor {
 
 			Field httyRequestField = httyContextClass.getDeclaredField(REQUEST_FIELD_NAME);
 			httyRequestField.setAccessible(true);
-			httyRequestThreadLocal= (ThreadLocal<HttyRequest>) httyRequestField.get(httyContextClass);
+			httyRequestThreadLocal= (FastThreadLocal<HttyRequest>) httyRequestField.get(httyContextClass);
 
 			Field httyResponseField = httyContextClass.getDeclaredField(RESPONSE_FIELD_NAME);
 			httyResponseField.setAccessible(true);
-			httyResponseThreadLocal= (ThreadLocal<HttyResponse>) httyResponseField.get(httyContextClass);
+			httyResponseThreadLocal= (FastThreadLocal<HttyResponse>) httyResponseField.get(httyContextClass);
 
 		} catch (Exception ex) {
 			LOG.error("HttyContextInterceptor init error", ex);
