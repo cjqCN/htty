@@ -21,7 +21,7 @@ public class MethodNotSupportHttyWorker implements InternalWorker {
 	}
 
 	@Override
-	public HttyMethod[] HttpMethod() {
+	public HttyMethod[] httpMethod() {
 		throw new IllegalStateException("Not supported to call");
 	}
 

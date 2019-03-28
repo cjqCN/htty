@@ -46,7 +46,7 @@ public class HelloWorldServer {
         }
 
         @Override
-        public HttyMethod[] HttpMethod() {
+        public HttyMethod[] httpMethod() {
             return HttyMethod.ALL_HTTP_METHOD;
         }
 
@@ -82,12 +82,12 @@ run：
 @EnableHttyWorking(prefixPath = "/index")
 public class IndexController {
 
-	@HttyRequestMapping(HttpMethod = HttyMethod.GET, path = "/hello")
+	@HttyRequestMapping(httpMethod = HttyMethod.GET, path = "/hello")
 	public void sayhello(HttyRequest httyRequest, HttyResponse httyResponse) {
 		httyResponse.sendString(OK, "hello world!");
 	}
 
-	@HttyRequestMapping(HttpMethod = HttyMethod.GET, path = "/welcome")
+	@HttyRequestMapping(httpMethod = HttyMethod.GET, path = "/welcome")
 	public void welcome(HttyRequest httyRequest, HttyResponse httyResponse) {
 		httyResponse.sendString(OK, "welcome to use Htty!");
 	}
@@ -98,7 +98,7 @@ public class IndexController {
 ```java
 public class AnnotationServer {
 
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) {
 		Collection<HttyWorker> httyWorkers = new DefaultWorkBuildHelper()
 				.scanAndBuild("com.github.cjqcn.htty.sample.annotation.work");
 		HttyServerBuilder.builder("AnnotationServer")

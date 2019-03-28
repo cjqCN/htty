@@ -106,7 +106,7 @@ public class DefaultWorkBuildHelper implements WorkBuildHelper {
             }
 
             @Override
-            public HttyMethod[] HttpMethod() {
+            public HttyMethod[] httpMethod() {
                 return httyRequestMapping.HttpMethod();
             }
 

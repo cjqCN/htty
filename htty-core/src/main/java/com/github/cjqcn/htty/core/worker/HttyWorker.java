@@ -8,7 +8,7 @@ public interface HttyWorker {
 
 	void handle(HttyRequest httyRequest, HttyResponse httyResponse) throws Exception;
 
-	HttyMethod[] HttpMethod();
+	HttyMethod[] httpMethod();
 
 	String path();
 }

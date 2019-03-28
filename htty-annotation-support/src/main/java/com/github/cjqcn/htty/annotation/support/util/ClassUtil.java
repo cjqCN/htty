@@ -113,6 +113,9 @@ public class ClassUtil {
 				return (recursive && file.isDirectory()) || (file.getName().endsWith(".class"));
 			}
 		});
+		if (dirfiles == null || dirfiles.length == 0) {
+			return;
+		}
 		//循环所有文件
 		for (File file : dirfiles) {
 			//如果是目录 则继续扫描

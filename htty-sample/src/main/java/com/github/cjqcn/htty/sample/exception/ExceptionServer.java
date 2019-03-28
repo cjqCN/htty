@@ -30,7 +30,7 @@ public class ExceptionServer {
 		}
 
 		@Override
-		public HttyMethod[] HttpMethod() {
+		public HttyMethod[] httpMethod() {
 			return HttyMethod.ALL_HTTP_METHOD;
 		}
 

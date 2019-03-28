@@ -2,6 +2,8 @@ package com.github.cjqcn.htty.core.http.cookie;
 
 import io.netty.handler.codec.http.cookie.Cookie;
 
+import java.util.Objects;
+
 import static com.github.cjqcn.htty.core.util.ObjectUtil.notNull;
 
 
@@ -108,6 +110,22 @@ public class DefaultHttyCookieWrapper implements HttyCookie, HttyCookieWrapper {
         return this;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        DefaultHttyCookieWrapper that = (DefaultHttyCookieWrapper) o;
+        return Objects.equals(cookie, that.cookie);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(cookie);
+    }
 
     @Override
     public String toString() {

@@ -21,8 +21,9 @@ public final class ObjectUtil {
 
     public static void notNull(Object o, String errorMsg) {
         if (o == null) {
-            if (errorMsg != null)
+            if (errorMsg != null) {
                 throw new NullPointerException(errorMsg);
+            }
             else {
                 throw new NullPointerException("NullPointerException");
             }

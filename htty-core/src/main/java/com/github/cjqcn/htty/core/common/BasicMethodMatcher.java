@@ -18,7 +18,7 @@ public class BasicMethodMatcher implements MethodMatcher {
 	public boolean match(HttyRequest httyRequest, HttyWorker httyWorker) {
 		try {
 			HttyMethod httyMethod = httyRequest.method();
-			HttyMethod[] supportedHttyMethod = httyWorker.HttpMethod();
+			HttyMethod[] supportedHttyMethod = httyWorker.httpMethod();
 			if (supportedHttyMethod != null) {
 				for (HttyMethod i : supportedHttyMethod) {
 					if (i == httyMethod) {
