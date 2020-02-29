@@ -9,7 +9,6 @@ import io.netty.handler.codec.http.cookie.Cookie;
 import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import io.netty.util.CharsetUtil;
 
-import javax.ws.rs.NotSupportedException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.*;
@@ -51,7 +50,7 @@ public class BasicHttyRequest implements HttyRequest {
         if (fullHttpRequest.method() == HttpMethod.OPTIONS) {
             return HttyMethod.OPTIONS;
         }
-        throw new NotSupportedException("不支持该方法:" + fullHttpRequest.method().name());
+        throw new UnsupportedOperationException("不支持该方法:" + fullHttpRequest.method().name());
     }
 
     @Override

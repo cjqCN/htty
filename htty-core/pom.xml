@@ -14,11 +14,11 @@
 
     <dependencies>
 
-        <dependency>
-            <groupId>javax.ws.rs</groupId>
-            <artifactId>javax.ws.rs-api</artifactId>
-            <version>${rs-api.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>javax.ws.rs</groupId>-->
+<!--            <artifactId>javax.ws.rs-api</artifactId>-->
+<!--            <version>${rs-api.version}</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>io.netty</groupId>
