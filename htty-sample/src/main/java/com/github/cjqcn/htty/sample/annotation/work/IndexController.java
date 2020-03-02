@@ -12,7 +12,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
  * @author: chenjinquan
  * @create: 2018-09-26 16:30
  **/
-@EnableHttyWorking(prefixPath = "/index")
+@EnableHttyWorking(path = "/index")
 public class IndexController {
 
 	@HttyRequestMapping(HttpMethod = HttyMethod.GET, path = "/hello")

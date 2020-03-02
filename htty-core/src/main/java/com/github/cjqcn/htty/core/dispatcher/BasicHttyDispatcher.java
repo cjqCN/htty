@@ -15,7 +15,7 @@ public class BasicHttyDispatcher implements HttyDispatcher {
 	private static final Logger LOG = LoggerFactory.getLogger(BasicHttyDispatcher.class);
 
 	public BasicHttyDispatcher(){
-		LOG.info("Init BasicHttyDispatcher");
+		LOG.info("Init BasicDispatcher");
 	}
 
 	@Override

@@ -10,10 +10,10 @@ public enum HttyMethod {
 
 	GET, HEAD, POST, PUT, DELETE, OPTIONS;
 
-	public static final HttyMethod[] ALL_HTTP_METHOD = new HttyMethod[]{GET, POST, HEAD, OPTIONS, DELETE, PUT};
+	private static final HttyMethod[] ALL_HTTP_METHOD = new HttyMethod[]{GET, POST, HEAD, OPTIONS, DELETE, PUT};
 
 	public static HttyMethod[] getAllHttpMethod() {
-		return ALL_HTTP_METHOD;
+		return ALL_HTTP_METHOD.clone();
 	}
 }
 

@@ -1,7 +1,5 @@
 package com.github.cjqcn.htty.core;
 
-import com.github.cjqcn.htty.core.common.AuditRecorder;
-import com.github.cjqcn.htty.core.common.BasicAuditRecorder;
 import com.github.cjqcn.htty.core.common.ExceptionHandler;
 import com.github.cjqcn.htty.core.common.SSLHandlerFactory;
 import com.github.cjqcn.htty.core.dispatcher.BasicHttyDispatcher;
@@ -13,7 +11,10 @@ import com.github.cjqcn.htty.core.router.BasicHttyRouter;
 import com.github.cjqcn.htty.core.router.HttyRouter;
 import com.github.cjqcn.htty.core.worker.HttyWorker;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -45,21 +46,20 @@ class BasicHttyServer implements HttyServer {
 
     private static final Logger LOG = LoggerFactory.getLogger(BasicHttyServer.class);
 
-    private final static String SSL_HANDLER_NAMRE = "ssl";
-    private final static String HTTP_SERVER_CODEC_HANDLER_NAME = "httpServerCodec";
-    private final static String HTTP_AGGREGATOR_CODEC_HANDLER_NAME = "HttpObjectAggregator";
-    private final static String CORS_HANDLER_NAME = "cors";
-    private final static String CONTENT_COMPRESSOR_HANDLER_NAME = "compressor";
-    private final static String HTTP_HANDLER_NAME = "httpWork";
+    private final static String SSL_HANDLER = "ssl";
+    private final static String HTTP_SERVER_CODEC_HANDLER = "httpServerCodec";
+    private final static String HTTP_AGGREGATOR_CODEC_HANDLER = "HttpObjectAggregator";
+    private final static String CORS_HANDLER = "cors";
+    private final static String CONTENT_COMPRESSOR_HANDLER = "compressor";
+    private final static String HTTP_HANDLER = "httpWorker";
     private final static String CHUNKED_WRITE_HANDLER = "chunkedWriter";
-    private final static String KEEPALIVE_HANDLER = "keepAlive";
 
     private final String serverName;
     private final int bossThreadPoolSize;
     private final int workerThreadPoolSize;
+    private final int businessThreadPoolSize;
     private final Map<ChannelOption, Object> channelConfigs;
     private final Map<ChannelOption, Object> childChannelConfigs;
-    private final AuditRecorder auditRecorder;
     private final HttyInterceptor httyInterceptor;
     private final HttyRouter httyRouter;
     private final HttyDispatcher httyDispatcher;
@@ -75,6 +75,10 @@ class BasicHttyServer implements HttyServer {
     private ChannelGroup channelGroup;
     private InetSocketAddress bindAddress;
 
+    private NioEventLoopGroup bossGroup;
+    private NioEventLoopGroup workerGroup;
+    private NioEventLoopGroup businessGroup;
+
     private int priority;
 
     /**
@@ -84,7 +88,7 @@ class BasicHttyServer implements HttyServer {
      * @param workerThreadPoolSize
      * @param channelConfigs
      * @param childChannelConfigs
-     * @param httyWorkers
+     * @param workers
      * @param httpInterceptors
      * @param httpChunkLimit
      * @param exceptionHandler
@@ -95,9 +99,10 @@ class BasicHttyServer implements HttyServer {
     BasicHttyServer(final String serverName, final int priority,
                     final int bossThreadPoolSize,
                     final int workerThreadPoolSize,
+                    final int businessThreadPoolSize,
                     final Map<ChannelOption, Object> channelConfigs,
                     final Map<ChannelOption, Object> childChannelConfigs,
-                    Collection<HttyWorker> httyWorkers,
+                    Collection<HttyWorker> workers,
                     Collection<HttyInterceptor> httpInterceptors,
                     final int httpChunkLimit, final ExceptionHandler exceptionHandler,
                     final SSLHandlerFactory sslHandlerFactory, final CorsConfig corsConfig,
@@ -107,11 +112,11 @@ class BasicHttyServer implements HttyServer {
         this.priority = priority;
         this.bossThreadPoolSize = bossThreadPoolSize;
         this.workerThreadPoolSize = workerThreadPoolSize;
+        this.businessThreadPoolSize = businessThreadPoolSize;
         this.channelConfigs = channelConfigs;
         this.childChannelConfigs = childChannelConfigs;
-        this.auditRecorder = new BasicAuditRecorder();
         this.httyInterceptor = new BasicHttyInterceptorContainer(httpInterceptors);
-        this.httyRouter = new BasicHttyRouter(httyWorkers);
+        this.httyRouter = new BasicHttyRouter(workers);
         this.httyDispatcher = new BasicHttyDispatcher();
         this.httpChunkLimit = httpChunkLimit;
         this.exceptionHandler = exceptionHandler;
@@ -138,7 +143,7 @@ class BasicHttyServer implements HttyServer {
                 bindAddress = (InetSocketAddress) serverChannel.localAddress();
 
                 long end = System.currentTimeMillis();
-                LOG.info("Started HTTP Service {} at address {}, cost {}ms", serverName, bindAddress, end - start);
+                LOG.info("Started HTTP Service {} at address {}, cost:{}ms", serverName, bindAddress, end - start);
                 state = State.RUNNING;
                 //sync
                 serverChannel.closeFuture().sync();
@@ -147,8 +152,7 @@ class BasicHttyServer implements HttyServer {
                 channelGroup.close().awaitUninterruptibly();
                 try {
                     if (bootstrap != null) {
-                        shutdownExecutorGroups(0, 5, TimeUnit.SECONDS, bootstrap.config().group(),
-                                bootstrap.config().childGroup());
+                        shutdownExecutorGroups(0, 5, TimeUnit.SECONDS, bossGroup, workerGroup, businessGroup);
                     }
                 } catch (Throwable t2) {
                     t.addSuppressed(t2);
@@ -202,19 +206,27 @@ class BasicHttyServer implements HttyServer {
      */
     private ServerBootstrap createBootstrap(final ChannelGroup channelGroup) {
 
-        EventLoopGroup bossGroup = new NioEventLoopGroup(bossThreadPoolSize,
+        bossGroup = new NioEventLoopGroup(bossThreadPoolSize,
                 createThreadFactory(serverName + "-boss-thread-%d", priority));
-        LOG.info("Init bossGroup, size:{}", ((NioEventLoopGroup) bossGroup).executorCount());
+        LOG.info("Init bossGroup, size:{}", bossGroup.executorCount());
 
-        EventLoopGroup workerGroup = new NioEventLoopGroup(workerThreadPoolSize,
+        workerGroup = new NioEventLoopGroup(workerThreadPoolSize,
                 createThreadFactory(serverName + "-worker-thread-%d", priority));
-        LOG.info("Init workerGroup, size:{}", ((NioEventLoopGroup) workerGroup).executorCount());
+        LOG.info("Init workerGroup, size:{}", workerGroup.executorCount());
+
+        NioEventLoopGroup _businessGroup = null;
+        if (businessThreadPoolSize > 0) {
+            _businessGroup = new NioEventLoopGroup(businessThreadPoolSize,
+                    createThreadFactory(serverName + "-business-thread-%d", priority));
+            LOG.info("Init businessGroup, size:{}", workerGroup.executorCount());
+        }
+        businessGroup = _businessGroup;
 
         ServerBootstrap bootstrap = new ServerBootstrap();
 
         final boolean sslEnabled = (sslHandlerFactory != null);
 
-        HttyHttpHandler httyHttpHandler = new HttyHttpHandler(auditRecorder, httyInterceptor, httyRouter,
+        HttyHttpHandler httyHttpHandler = new HttyHttpHandler(httyInterceptor, httyRouter,
                 httyDispatcher, exceptionHandler, sslEnabled);
 
         bootstrap
@@ -224,22 +236,25 @@ class BasicHttyServer implements HttyServer {
                     @Override
                     protected void initChannel(SocketChannel ch) {
                         channelGroup.add(ch);
-
                         ChannelPipeline pipeline = ch.pipeline();
 
                         if (sslEnabled) {
                             // Add SSLHandler if SSL is enabled
-                            pipeline.addLast(SSL_HANDLER_NAMRE, sslHandlerFactory.create(ch.alloc()));
+                            pipeline.addLast(SSL_HANDLER, sslHandlerFactory.create(ch.alloc()));
                         }
-                        pipeline.addLast(HTTP_SERVER_CODEC_HANDLER_NAME, new HttpServerCodec());
-                        pipeline.addLast(HTTP_AGGREGATOR_CODEC_HANDLER_NAME,
+                        pipeline.addLast(HTTP_SERVER_CODEC_HANDLER, new HttpServerCodec());
+                        pipeline.addLast(HTTP_AGGREGATOR_CODEC_HANDLER,
                                 new HttpObjectAggregator(10 * 1024 * 1024));
                         if (corsConfig != null) {
-                            pipeline.addLast(CORS_HANDLER_NAME, new CorsHandler(corsConfig));
+                            pipeline.addLast(CORS_HANDLER, new CorsHandler(corsConfig));
                         }
-                        pipeline.addLast(CONTENT_COMPRESSOR_HANDLER_NAME, new HttpContentCompressor());
+                        pipeline.addLast(CONTENT_COMPRESSOR_HANDLER, new HttpContentCompressor());
                         pipeline.addLast(CHUNKED_WRITE_HANDLER, new ChunkedWriteHandler());
-                        pipeline.addLast(HTTP_HANDLER_NAME, httyHttpHandler);
+                        if (businessGroup == null) {
+                            pipeline.addLast(HTTP_HANDLER, httyHttpHandler);
+                        } else {
+                            pipeline.addLast(businessGroup, HTTP_HANDLER, httyHttpHandler);
+                        }
                     }
                 });
 

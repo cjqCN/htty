@@ -7,23 +7,18 @@ import com.github.cjqcn.htty.core.http.HttyMethod;
 import com.github.cjqcn.htty.core.http.HttyRequest;
 import com.github.cjqcn.htty.core.http.HttyResponse;
 import com.github.cjqcn.htty.core.worker.HttyWorker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
 
 /**
- * @description:
  * @author: chenjinquan
  * @create: 2018-09-26 15:30
  **/
 public class DefaultWorkBuildHelper implements WorkBuildHelper {
-
-    private static final Logger LOG = LoggerFactory.getLogger(DefaultWorkBuildHelper.class);
-
 
     public static final WorkBuildHelper instance = new DefaultWorkBuildHelper();
 
@@ -31,52 +26,49 @@ public class DefaultWorkBuildHelper implements WorkBuildHelper {
     }
 
     @Override
-    public Collection<HttyWorker> scanAndBuild(String packageName) {
+    public List<HttyWorker> scanAndBuild(String packageName) {
+        List<Class<?>> classes;
         try {
-            List<Class<?>> classes = ClassUtil.getClassList(packageName);
-            return scanAndBuild(classes);
-        } catch (Exception e) {
-            LOG.error("", e);
-            return Collections.EMPTY_LIST;
+            classes = ClassUtil.getClassList(packageName);
+        } catch (ClassNotFoundException | IOException e) {
+            throw new RuntimeException(e);
         }
+        return scanAndBuild(classes);
     }
 
     @Override
-    public Collection<HttyWorker> scanAndBuild(Class<?> claz) {
-        if (claz == null || !claz.isAnnotationPresent(EnableHttyWorking.class)) {
-            return Collections.EMPTY_LIST;
-        }
-        EnableHttyWorking enableHttyWorking = claz.getAnnotation(EnableHttyWorking.class);
-        final String prefixPath = enableHttyWorking.prefixPath();
-        Map<Method, HttyRequestMapping> methodHttyRequestMappingMap = getHasHttyRequestMappingMethod(claz);
-        if (methodHttyRequestMappingMap.isEmpty()) {
-            return Collections.EMPTY_LIST;
-        }
-        Object instance;
+    public List<HttyWorker> scanAndBuild(Class<?> clazz) {
         try {
-            instance = claz.getDeclaredConstructor().newInstance();
-        } catch (Exception ex) {
-            LOG.warn("Class:{} fail to instance", claz.getName(), ex);
-            return Collections.EMPTY_LIST;
-        }
-        List<HttyWorker> httyWorkers = new LinkedList<>();
-        Object _Instance = instance;
-        methodHttyRequestMappingMap.forEach((k, v) -> {
-            HttyWorker httyWorker;
-            if ((httyWorker = createHttyWorker(k, v, _Instance, prefixPath)) != null) {
-                httyWorkers.add(httyWorker);
+            if (clazz == null || !clazz.isAnnotationPresent(EnableHttyWorking.class)) {
+                return Collections.EMPTY_LIST;
             }
-        });
-        return httyWorkers;
+            EnableHttyWorking enableHttyWorking = clazz.getAnnotation(EnableHttyWorking.class);
+            final String prefixPath = enableHttyWorking.path();
+            Map<Method, HttyRequestMapping> methodHttyRequestMappingMap = getHasHttyRequestMappingMethod(clazz);
+            if (methodHttyRequestMappingMap.isEmpty()) {
+                return Collections.EMPTY_LIST;
+            }
+            final Object instance = clazz.getDeclaredConstructor().newInstance();
+            List<HttyWorker> workers = new LinkedList<>();
+            methodHttyRequestMappingMap.forEach((k, v) -> {
+                HttyWorker httyWorker;
+                if ((httyWorker = createHttyWorker(k, v, instance, prefixPath)) != null) {
+                    workers.add(httyWorker);
+                }
+            });
+            return workers;
+        } catch (Exception ex) {
+            if (ex instanceof RuntimeException) {
+                throw (RuntimeException) ex;
+            }
+            throw new RuntimeException(ex);
+        }
     }
 
-
-    private HttyWorker createHttyWorker(Method method, HttyRequestMapping httyRequestMapping, Object instance,
-                                        String prefixPath) {
+    private HttyWorker createHttyWorker(Method method, HttyRequestMapping httyRequestMapping, Object instance, String prefixPath) {
         Parameter[] parameters = method.getParameters();
         if (parameters.length != 2) {
-            LOG.warn("method:{} fail to registerd, because its parameters' length is not 2", method.getName());
-            return null;
+            throw new RuntimeException("method:" + method.getName() + " because it's parameters' length is not 2");
         }
         int tag = 0;
         if (parameters[0].getType().equals(HttyRequest.class) && parameters[1].getType().equals(HttyResponse.class)) {
@@ -86,11 +78,9 @@ public class DefaultWorkBuildHelper implements WorkBuildHelper {
             tag = 2;
         }
         if (tag == 0) {
-            LOG.warn("method:{} fail to registerd, because its parameters' type is invalid", method.getName());
-            return null;
+            throw new RuntimeException("method:" + method.getName() + " fail to registered, because it's parameters' type is invalid");
         }
         final int _tag = tag;
-
         return new HttyWorker() {
             @Override
             public void handle(HttyRequest httyRequest, HttyResponse httyResponse) throws Exception {
@@ -119,13 +109,13 @@ public class DefaultWorkBuildHelper implements WorkBuildHelper {
     }
 
     private static Map<Method, HttyRequestMapping> getHasHttyRequestMappingMethod(Class<?> targetClass) {
-        Map<Method, HttyRequestMapping> methodPermissionMap = new HashMap<>();
+        Map<Method, HttyRequestMapping> map = new HashMap<>();
         Method[] methods = targetClass.getDeclaredMethods();
         for (Method method : methods) {
             if (method.getAnnotation(HttyRequestMapping.class) != null) {
-                methodPermissionMap.put(method, method.getAnnotation(HttyRequestMapping.class));
+                map.put(method, method.getAnnotation(HttyRequestMapping.class));
             }
         }
-        return methodPermissionMap;
+        return map;
     }
 }

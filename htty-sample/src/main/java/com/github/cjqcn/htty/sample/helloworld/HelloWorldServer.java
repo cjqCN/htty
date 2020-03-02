@@ -1,7 +1,6 @@
 package com.github.cjqcn.htty.sample.helloworld;
 
 import com.github.cjqcn.htty.core.HttyServerBuilder;
-import com.github.cjqcn.htty.core.common.HttyContext;
 import com.github.cjqcn.htty.core.http.HttyMethod;
 import com.github.cjqcn.htty.core.http.HttyRequest;
 import com.github.cjqcn.htty.core.http.HttyResponse;
@@ -10,7 +9,6 @@ import com.github.cjqcn.htty.core.worker.HttyWorker;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 
 /**
- * @description:
  * @author: chenjinquan
  * @create: 2018-09-14 17:20
  **/
@@ -19,7 +17,7 @@ public class HelloWorldServer {
 	public static void main(String[] args) throws Exception {
 		HttyServerBuilder.builder("HelloWorldServer")
 				.setPort(8080)
-				.addHttyHandler(new HelloWorldHandler())
+				.addHandler(new HelloWorldHandler())
 				.build().start();
 	}
 
@@ -27,19 +25,13 @@ public class HelloWorldServer {
 	static class HelloWorldHandler implements HttyWorker {
 		@Override
 		public void handle(HttyRequest httyRequest, HttyResponse httyResponse) {
-
-			System.out.println("------------------httyRequest.params()------------------------");
 			System.out.println(httyRequest.params());
-
-			System.out.println("-------------HttyContext.httyRequest().params()---------------");
-			System.out.println(HttyContext.httyRequest().params());
-
 			httyResponse.sendString(OK, "hello world");
 		}
 
 		@Override
 		public HttyMethod[] httpMethod() {
-			return HttyMethod.ALL_HTTP_METHOD;
+			return HttyMethod.getAllHttpMethod();
 		}
 
 		@Override

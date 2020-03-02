@@ -4,11 +4,11 @@ import com.github.cjqcn.htty.core.common.Priority;
 import com.github.cjqcn.htty.core.common.UrlPatternMatchEnable;
 import com.github.cjqcn.htty.core.http.HttyRequest;
 import com.github.cjqcn.htty.core.http.HttyResponse;
-import com.github.cjqcn.htty.core.interceptor.HttyInterceptorWrapper;
+import com.github.cjqcn.htty.core.interceptor.HttyInterceptor;
 
 import java.util.Collection;
 
-public interface HttyInterceptorAdapter extends HttyInterceptorWrapper, Priority, UrlPatternMatchEnable {
+public interface HttyInterceptorAdapter extends HttyInterceptor, Priority, UrlPatternMatchEnable {
 
     @Override
     default boolean preHandle(HttyRequest request, HttyResponse response) {

@@ -11,7 +11,7 @@ import static com.github.cjqcn.htty.core.http.HttyMethod.*;
 @Documented
 public @interface HttyRequestMapping {
 
-	HttyMethod[] HttpMethod() default {GET, POST, HEAD, OPTIONS, DELETE, PUT};
+    HttyMethod[] HttpMethod() default {GET, POST, HEAD, OPTIONS, DELETE, PUT};
 
-	String path() default "";
+    String path() default "";
 }

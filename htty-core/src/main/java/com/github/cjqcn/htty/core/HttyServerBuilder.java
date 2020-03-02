@@ -40,6 +40,7 @@ public class HttyServerBuilder {
     private Collection<HttyInterceptor> httyInterceptors;
     private int bossThreadPoolSize;
     private int workerThreadPoolSize;
+    private int businessThreadPoolSize;
     private String host;
     private int port;
     private int httpChunkLimit;
@@ -64,6 +65,7 @@ public class HttyServerBuilder {
         this.bossThreadPoolSize = DEFAULT_BOSS_THREAD_POOL_SIZE;
         this.workerThreadPoolSize = DEFAULT_WORKER_THREAD_POOL_SIZE;
         this.httpChunkLimit = DEFAULT_HTTP_CHUNK_LIMIT;
+        this.businessThreadPoolSize = 0;
         this.host = DEFAULT_SERVER_HOST;
         this.port = DEFAULT_SERVER_PORT;
         this.httyWorkers = new ArrayList<>();
@@ -90,7 +92,7 @@ public class HttyServerBuilder {
         return this;
     }
 
-    public HttyServerBuilder addHttyHandler(HttyWorker... httyWorkers) {
+    public HttyServerBuilder addHandler(HttyWorker... httyWorkers) {
         if (httyWorkers != null) {
             for (HttyWorker httyHandler : httyWorkers) {
                 this.httyWorkers.add(httyHandler);
@@ -99,13 +101,13 @@ public class HttyServerBuilder {
         return this;
     }
 
-    public HttyServerBuilder addHttyHandler(Collection<? extends HttyWorker> httyWorkers) {
+    public HttyServerBuilder addHandler(Collection<? extends HttyWorker> httyWorkers) {
         this.httyWorkers.addAll(httyWorkers);
         return this;
     }
 
 
-    public HttyServerBuilder addHttyInterceptor(HttyInterceptor... httyInterceptors) {
+    public HttyServerBuilder addInterceptor(HttyInterceptor... httyInterceptors) {
         if (httyInterceptors != null) {
             for (HttyInterceptor httyInterceptor : httyInterceptors) {
                 this.httyInterceptors.add(httyInterceptor);
@@ -114,22 +116,11 @@ public class HttyServerBuilder {
         return this;
     }
 
-    public HttyServerBuilder addHttyInterceptor(Collection<? extends HttyInterceptor> httyInterceptors) {
+    public HttyServerBuilder addInterceptor(Collection<? extends HttyInterceptor> httyInterceptors) {
         this.httyInterceptors.addAll(httyInterceptors);
         return this;
     }
 
-
-    public HttyServerBuilder setBossThreadPoolSize(int bossThreadPoolSize) {
-        this.bossThreadPoolSize = bossThreadPoolSize;
-        return this;
-    }
-
-
-    public HttyServerBuilder setWorkerThreadPoolSize(int workerThreadPoolSize) {
-        this.workerThreadPoolSize = workerThreadPoolSize;
-        return this;
-    }
 
     public HttyServerBuilder setHost(String host) {
         this.host = host;
@@ -167,6 +158,11 @@ public class HttyServerBuilder {
         return this;
     }
 
+    public HttyServerBuilder setBusinessThreadPoolSize(int businessThreadPoolSize) {
+        this.businessThreadPoolSize = businessThreadPoolSize;
+        return this;
+    }
+
 
     /**
      * Build a {@link HttyServer} with pre-setting
@@ -176,7 +172,7 @@ public class HttyServerBuilder {
     public HttyServer build() {
         InetSocketAddress bindAddress = new InetSocketAddress(host, port);
         return new BasicHttyServer(serverName, priority, bossThreadPoolSize,
-                workerThreadPoolSize, channelConfigs, childChannelConfigs,
+                workerThreadPoolSize, businessThreadPoolSize, channelConfigs, childChannelConfigs,
                 httyWorkers, httyInterceptors, httpChunkLimit, exceptionHandler,
                 sslHandlerFactory, corsConfig, bindAddress, shutdownHook);
     }

@@ -4,20 +4,16 @@ import io.netty.handler.codec.http.cookie.Cookie;
 
 import java.util.Objects;
 
-import static com.github.cjqcn.htty.core.util.ObjectUtil.notNull;
-
 
 /**
- * @description:
  * @author: chenjinquan
  * @create: 2018-10-07 19:20
  **/
-public class DefaultHttyCookieWrapper implements HttyCookie, HttyCookieWrapper {
+public class DefaultHttyCookieWrapper implements HttyCookie {
 
     private final Cookie cookie;
 
     DefaultHttyCookieWrapper(Cookie cookie) {
-        notNull(cookie, "cookie is null");
         this.cookie = cookie;
     }
 
@@ -103,11 +99,6 @@ public class DefaultHttyCookieWrapper implements HttyCookie, HttyCookieWrapper {
     @Override
     public int compareTo(Cookie o) {
         return getCookie().compareTo(o);
-    }
-
-    @Override
-    public HttyCookie get() {
-        return this;
     }
 
     @Override

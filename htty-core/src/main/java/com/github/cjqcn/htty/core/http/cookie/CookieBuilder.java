@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 
 /**
- * @description:
  * @author: chenjinquan
  * @create: 2018-10-07 21:06
  **/

@@ -6,7 +6,8 @@ import com.github.cjqcn.htty.core.common.MethodMatcher;
 import com.github.cjqcn.htty.core.common.PathMatcher;
 import com.github.cjqcn.htty.core.http.HttyRequest;
 import com.github.cjqcn.htty.core.worker.HttyWorker;
-import com.github.cjqcn.htty.core.worker.MethodNotSupportHttyWorker;
+import com.github.cjqcn.htty.core.worker.InternalWorker;
+import com.github.cjqcn.htty.core.worker.MethodNotSupportedHttyWorker;
 import com.github.cjqcn.htty.core.worker.NotFoundHttyWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,10 +21,10 @@ public class BasicHttyRouter implements HttyRouter {
 	private MethodMatcher methodMatcher = BasicMethodMatcher.instance;
 
 	private static NotFoundHttyWorker notFoundHttyWorker = new NotFoundHttyWorker();
-	private static MethodNotSupportHttyWorker methodNotSupportHttyWorker = new MethodNotSupportHttyWorker();
+	private static InternalWorker methodNotSupportedHttyWorker = new MethodNotSupportedHttyWorker();
 
 	public BasicHttyRouter(final Iterable<? extends HttyWorker> httyWorkers) {
-		LOG.info("Init BasicHttyRouter");
+		LOG.info("Init BasicRouter");
 		this.httyWorkers = httyWorkers;
 	}
 
@@ -41,7 +42,7 @@ public class BasicHttyRouter implements HttyRouter {
 				if (methodMatcher.match(request, httyWorker)) {
 					return httyWorker;
 				} else {
-					return methodNotSupportHttyWorker;
+					return methodNotSupportedHttyWorker;
 				}
 			}
 		}

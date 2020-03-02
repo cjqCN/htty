@@ -8,25 +8,24 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * @description:
  * @author: chenjinquan
  * @create: 2018-09-26 15:23
  **/
 public interface WorkBuildHelper {
 
-	Collection<HttyWorker> scanAndBuild(String packageName);
+    List<HttyWorker> scanAndBuild(String packageName);
 
-	Collection<HttyWorker> scanAndBuild(Class<?> claz);
+    List<HttyWorker> scanAndBuild(Class<?> clazz);
 
-	default Collection<HttyWorker> scanAndBuild(Collection<Class<?>> classes) {
-		if (classes == null || classes.isEmpty()) {
-			return Collections.EMPTY_LIST;
-		}
-		List<HttyWorker> httyWorkers = new LinkedList<>();
-		for (Class claz : classes) {
-			httyWorkers.addAll(scanAndBuild(claz));
-		}
-		return httyWorkers;
-	}
+    default List<HttyWorker> scanAndBuild(Collection<Class<?>> classes) {
+        if (classes == null || classes.isEmpty()) {
+            return Collections.EMPTY_LIST;
+        }
+        List<HttyWorker> workers = new LinkedList<>();
+        for (Class clazz : classes) {
+            workers.addAll(scanAndBuild(clazz));
+        }
+        return workers;
+    }
 
 }

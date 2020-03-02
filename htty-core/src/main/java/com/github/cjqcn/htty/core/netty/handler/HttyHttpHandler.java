@@ -1,6 +1,5 @@
 package com.github.cjqcn.htty.core.netty.handler;
 
-import com.github.cjqcn.htty.core.common.AuditRecorder;
 import com.github.cjqcn.htty.core.common.ExceptionHandler;
 import com.github.cjqcn.htty.core.dispatcher.HttyDispatcher;
 import com.github.cjqcn.htty.core.http.BasicHttyRequest;
@@ -27,17 +26,15 @@ public class HttyHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest
 
     private static final Logger LOG = LoggerFactory.getLogger(HttyHttpHandler.class);
 
-    private AuditRecorder auditRecorder;
     private HttyInterceptor httyInterceptor;
     private HttyRouter httyRouter;
     private HttyDispatcher httyDispatcher;
     private ExceptionHandler exceptionHandler;
     private boolean sslEnabled;
 
-    public HttyHttpHandler(AuditRecorder auditRecorder, HttyInterceptor httyInterceptor,
+    public HttyHttpHandler(HttyInterceptor httyInterceptor,
                            HttyRouter httyRouter, HttyDispatcher httyDispatcher,
                            ExceptionHandler exceptionHandler, boolean sslEnabled) {
-        this.auditRecorder = auditRecorder;
         this.httyInterceptor = httyInterceptor;
         this.httyRouter = httyRouter;
         this.httyDispatcher = httyDispatcher;
@@ -53,17 +50,15 @@ public class HttyHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest
         httyHandle(request, response);
     }
 
-
-    public void httyHandle(HttyRequest request, HttyResponse response)   {
+    public void httyHandle(HttyRequest request, HttyResponse response) {
         try {
-            _httyHandle(request, response);
+            httyHandle0(request, response);
         } catch (Exception ex) {
             exceptionHandler.handle(ex, request, response);
         }
     }
 
-    public void _httyHandle(HttyRequest request, HttyResponse response) throws Exception {
-        auditRecorder.record(request);
+    public void httyHandle0(HttyRequest request, HttyResponse response) throws Exception {
         if (!httyInterceptor.preHandle(request, response)) {
             LOG.debug("preHandle returns false, connection is closed");
             return;
@@ -73,11 +68,7 @@ public class HttyHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest
         httyInterceptor.postHandle(request, response);
     }
 
-
     private void verify() {
-        if (auditRecorder == null) {
-            throw new NullPointerException("auditRecorder is null");
-        }
         if (httyInterceptor == null) {
             throw new NullPointerException("httyInterceptor is null");
         }

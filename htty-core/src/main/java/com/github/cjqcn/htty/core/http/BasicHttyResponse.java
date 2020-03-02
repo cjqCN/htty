@@ -21,242 +21,260 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public final class BasicHttyResponse extends AbstractHttyResponse {
 
-	private static final Logger LOG = LoggerFactory.getLogger(BasicHttyResponse.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BasicHttyResponse.class);
 
-	private final Channel channel;
-	private final AtomicBoolean responded;
-	private final boolean sslEnabled;
+    private final Channel channel;
+    private final AtomicBoolean responded;
+    private final boolean sslEnabled;
+    private HttpHeaders httpHeaders = EmptyHttpHeaders.INSTANCE;
 
-	public BasicHttyResponse(Channel channel, boolean sslEnabled) {
-		this.channel = channel;
-		this.responded = new AtomicBoolean(false);
-		this.sslEnabled = sslEnabled;
-	}
+    public BasicHttyResponse(Channel channel, boolean sslEnabled) {
+        this.channel = channel;
+        this.responded = new AtomicBoolean(false);
+        this.sslEnabled = sslEnabled;
+    }
 
-	@Override
-	public ChunkResponder sendChunkStart(HttpResponseStatus status, HttpHeaders headers) {
-		if (status.code() < 200 || status.code() >= 210) {
-			throw new IllegalArgumentException("Status code must be between 200 and 210. Status code provided is "
-					+ status.code());
-		}
+    @Override
+    public synchronized HttpHeaders getHeaders() {
+        if (httpHeaders == EmptyHttpHeaders.INSTANCE) {
+            httpHeaders = new DefaultHttpHeaders();
+        }
+        return httpHeaders;
+    }
 
-		HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
-		addContentTypeIfMissing(response.headers().add(headers), OCTET_STREAM_TYPE);
+    @Override
+    public synchronized void addHeader(HttpHeaders headers) {
+        if (httpHeaders == EmptyHttpHeaders.INSTANCE) {
+            httpHeaders = new DefaultHttpHeaders();
+        }
+        httpHeaders.add(headers);
+    }
 
-		if (HttpUtil.getContentLength(response, -1L) < 0) {
-			HttpUtil.setTransferEncodingChunked(response, true);
-		}
+    @Override
+    public ChunkResponder sendChunkStart(HttpResponseStatus status) {
+        if (status.code() < 200 || status.code() >= 210) {
+            throw new IllegalArgumentException("Status code must be between 200 and 210. Status code provided is "
+                    + status.code());
+        }
 
-		checkNotResponded();
-		channel.write(response);
-		return new ChannelChunkResponder(channel);
-	}
+        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
+        addContentTypeIfMissing(response.headers().add(httpHeaders), OCTET_STREAM_TYPE);
 
-	@Override
-	public void sendContent(HttpResponseStatus status, ByteBuf content, HttpHeaders headers) {
-		FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, content);
-		response.headers().add(headers);
-		HttpUtil.setContentLength(response, content.readableBytes());
+        if (HttpUtil.getContentLength(response, -1L) < 0) {
+            HttpUtil.setTransferEncodingChunked(response, true);
+        }
 
-		response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, content.readableBytes());
+        checkNotResponded();
+        channel.write(response);
+        return new ChannelChunkResponder(channel);
+    }
 
-		if (content.isReadable()) {
-			addContentTypeIfMissing(response.headers(), OCTET_STREAM_TYPE);
-		}
+    @Override
+    public void sendContent(HttpResponseStatus status, ByteBuf content) {
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, content);
+        response.headers().add(httpHeaders);
+        HttpUtil.setContentLength(response, content.readableBytes());
 
-		checkNotResponded();
-		channel.writeAndFlush(response);
-	}
+        response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, content.readableBytes());
 
-	@Override
-	public void sendFile(File file, HttpHeaders headers) throws IOException {
-		HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-		addContentTypeIfMissing(response.headers().add(headers), OCTET_STREAM_TYPE);
+        if (content.isReadable()) {
+            addContentTypeIfMissing(response.headers(), OCTET_STREAM_TYPE);
+        }
 
-		HttpUtil.setTransferEncodingChunked(response, false);
-		HttpUtil.setContentLength(response, file.length());
+        checkNotResponded();
+        channel.writeAndFlush(response);
+    }
 
-		// Open the file first to make sure it is readable before sending out the response
-		RandomAccessFile raf = new RandomAccessFile(file, "r");
-		try {
-			checkNotResponded();
+    @Override
+    public void sendFile(File file) throws IOException {
+        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+        addContentTypeIfMissing(response.headers().add(httpHeaders), OCTET_STREAM_TYPE);
 
-			// Write the initial line and the header.
-			channel.write(response);
+        HttpUtil.setTransferEncodingChunked(response, false);
+        HttpUtil.setContentLength(response, file.length());
 
-			// Write the content.
-			// FileRegion only works in non-SSL case. For SSL case, use ChunkedFile instead.
-			// See https://github.com/netty/netty/issues/2075
-			if (sslEnabled) {
-				// The HttpChunkedInput will write out the last content
-				channel.writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf, 8192)));
-			} else {
-				// The FileRegion will close the file channel when it is done sending.
-				FileRegion region = new DefaultFileRegion(raf.getChannel(), 0, file.length());
-				channel.write(region);
-				channel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
-			}
-		} catch (Throwable t) {
-			try {
-				raf.close();
-			} catch (IOException ex) {
-				t.addSuppressed(ex);
-			}
-			throw t;
-		}
-	}
+        // Open the file first to make sure it is readable before sending out the response
+        RandomAccessFile raf = new RandomAccessFile(file, "r");
+        try {
+            checkNotResponded();
 
-	@Override
-	public void sendContent(HttpResponseStatus status, final BodyProducer bodyProducer, HttpHeaders headers) {
-		final long contentLength;
-		try {
-			contentLength = bodyProducer.getContentLength();
-		} catch (Throwable t) {
-			bodyProducer.handleError(t);
-			// Response with error and close the connection
-			sendContent(
-					HttpResponseStatus.INTERNAL_SERVER_ERROR,
-					Unpooled.copiedBuffer("Failed to determined content length. Cause: " + t.getMessage(),
-							StandardCharsets.UTF_8),
-					new DefaultHttpHeaders()
-							.set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE)
-							.set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=utf-8"));
-			return;
-		}
+            // Write the initial line and the header.
+            channel.write(response);
 
-		HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-		addContentTypeIfMissing(response.headers().add(headers), OCTET_STREAM_TYPE);
+            // Write the content.
+            // FileRegion only works in non-SSL case. For SSL case, use ChunkedFile instead.
+            // See https://github.com/netty/netty/issues/2075
+            if (sslEnabled) {
+                // The HttpChunkedInput will write out the last content
+                channel.writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf, 8192)));
+            } else {
+                // The FileRegion will close the file channel when it is done sending.
+                FileRegion region = new DefaultFileRegion(raf.getChannel(), 0, file.length());
+                channel.write(region);
+                channel.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+            }
+        } catch (Throwable t) {
+            try {
+                raf.close();
+            } catch (IOException ex) {
+                t.addSuppressed(ex);
+            }
+            throw t;
+        }
+    }
 
-		if (contentLength < 0L) {
-			HttpUtil.setTransferEncodingChunked(response, true);
-		} else {
-			HttpUtil.setTransferEncodingChunked(response, false);
-			HttpUtil.setContentLength(response, contentLength);
-		}
+    @Override
+    public void sendContent(HttpResponseStatus status, final BodyProducer bodyProducer) {
+        final long contentLength;
+        try {
+            contentLength = bodyProducer.getContentLength();
+        } catch (Throwable t) {
+            bodyProducer.handleError(t);
+            // Response with error and close the connection
+            addHeader(new DefaultHttpHeaders()
+                    .set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE)
+                    .set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=utf-8"));
 
-		checkNotResponded();
+            sendContent(
+                    HttpResponseStatus.INTERNAL_SERVER_ERROR,
+                    Unpooled.copiedBuffer("Failed to determined content length. Cause: " + t.getMessage(),
+                            StandardCharsets.UTF_8));
+            return;
+        }
 
-		// Streams the data produced by the given BodyProducer
-		channel.writeAndFlush(response).addListener(new ChannelFutureListener() {
+        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+        addContentTypeIfMissing(response.headers().add(httpHeaders), OCTET_STREAM_TYPE);
 
-			@Override
-			public void operationComplete(ChannelFuture future) throws Exception {
-				if (!future.isSuccess()) {
-					callBodyProducerHandleError(bodyProducer, future.cause());
-					channel.close();
-					return;
-				}
-				channel.writeAndFlush(new HttpChunkedInput(new BodyProducerChunkedInput(bodyProducer, contentLength)))
-						.addListener(createBodyProducerCompletionListener(bodyProducer));
-			}
-		});
-	}
+        if (contentLength < 0L) {
+            HttpUtil.setTransferEncodingChunked(response, true);
+        } else {
+            HttpUtil.setTransferEncodingChunked(response, false);
+            HttpUtil.setContentLength(response, contentLength);
+        }
 
-	/**
-	 * Returns {@code true} if response was sent.
-	 */
-	boolean isResponded() {
-		return responded.get();
-	}
+        checkNotResponded();
 
-	private ChannelFutureListener createBodyProducerCompletionListener(final BodyProducer bodyProducer) {
-		return new ChannelFutureListener() {
-			@Override
-			public void operationComplete(ChannelFuture future) throws Exception {
-				if (!future.isSuccess()) {
-					callBodyProducerHandleError(bodyProducer, future.cause());
-					channel.close();
-					return;
-				}
+        // Streams the data produced by the given BodyProducer
+        channel.writeAndFlush(response).addListener(new ChannelFutureListener() {
 
-				try {
-					bodyProducer.finished();
-				} catch (Throwable t) {
-					callBodyProducerHandleError(bodyProducer, t);
-					channel.close();
-				}
-			}
-		};
-	}
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if (!future.isSuccess()) {
+                    callBodyProducerHandleError(bodyProducer, future.cause());
+                    channel.close();
+                    return;
+                }
+                channel.writeAndFlush(new HttpChunkedInput(new BodyProducerChunkedInput(bodyProducer, contentLength)))
+                        .addListener(createBodyProducerCompletionListener(bodyProducer));
+            }
+        });
+    }
 
-	private void callBodyProducerHandleError(BodyProducer bodyProducer, Throwable failureCause) {
-		try {
-			bodyProducer.handleError(failureCause);
-		} catch (Throwable t) {
-			LOG.warn("Exception raised from BodyProducer.handleError() for {}", bodyProducer, t);
-		}
-	}
+    /**
+     * Returns {@code true} if response was sent.
+     */
+    boolean isResponded() {
+        return responded.get();
+    }
 
-	private void checkNotResponded() {
-		if (!responded.compareAndSet(false, true)) {
-			throw new IllegalStateException("Response has already been sent");
-		}
-	}
+    private ChannelFutureListener createBodyProducerCompletionListener(final BodyProducer bodyProducer) {
+        return new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if (!future.isSuccess()) {
+                    callBodyProducerHandleError(bodyProducer, future.cause());
+                    channel.close();
+                    return;
+                }
 
-	/**
-	 * A {@link ChunkedInput} implementation that produce chunks using {@link BodyProducer}.
-	 */
-	private static final class BodyProducerChunkedInput implements ChunkedInput<ByteBuf> {
+                try {
+                    bodyProducer.finished();
+                } catch (Throwable t) {
+                    callBodyProducerHandleError(bodyProducer, t);
+                    channel.close();
+                }
+            }
+        };
+    }
 
-		private final BodyProducer bodyProducer;
-		private final long length;
-		private long bytesProduced;
-		private ByteBuf nextChunk;
-		private boolean completed;
+    private void callBodyProducerHandleError(BodyProducer bodyProducer, Throwable failureCause) {
+        try {
+            bodyProducer.handleError(failureCause);
+        } catch (Throwable t) {
+            LOG.warn("Exception raised from BodyProducer.handleError() for {}", bodyProducer, t);
+        }
+    }
 
-		private BodyProducerChunkedInput(BodyProducer bodyProducer, long length) {
-			this.bodyProducer = bodyProducer;
-			this.length = length;
-		}
+    private void checkNotResponded() {
+        if (!responded.compareAndSet(false, true)) {
+            throw new IllegalStateException("Response has already been sent");
+        }
+    }
 
-		@Override
-		public boolean isEndOfInput() throws Exception {
-			if (completed) {
-				return true;
-			}
-			if (nextChunk == null) {
-				nextChunk = bodyProducer.nextChunk();
-			}
+    /**
+     * A {@link ChunkedInput} implementation that produce chunks using {@link BodyProducer}.
+     */
+    private static final class BodyProducerChunkedInput implements ChunkedInput<ByteBuf> {
 
-			completed = !nextChunk.isReadable();
-			if (completed && length >= 0 && bytesProduced != length) {
-				throw new IllegalStateException("Body size doesn't match with content length. " +
-						"Content-Length: " + length + ", bytes produced: " + bytesProduced);
-			}
+        private final BodyProducer bodyProducer;
+        private final long length;
+        private long bytesProduced;
+        private ByteBuf nextChunk;
+        private boolean completed;
 
-			return completed;
-		}
+        private BodyProducerChunkedInput(BodyProducer bodyProducer, long length) {
+            this.bodyProducer = bodyProducer;
+            this.length = length;
+        }
 
-		@Override
-		public void close() throws Exception {
-			// No-op. Calling of the BodyProducer.finish() is done via the channel future completion.
-		}
+        @Override
+        public boolean isEndOfInput() throws Exception {
+            if (completed) {
+                return true;
+            }
+            if (nextChunk == null) {
+                nextChunk = bodyProducer.nextChunk();
+            }
 
-		@Override
-		public ByteBuf readChunk(ChannelHandlerContext ctx) throws Exception {
-			return readChunk(ctx.alloc());
-		}
+            completed = !nextChunk.isReadable();
+            if (completed && length >= 0 && bytesProduced != length) {
+                throw new IllegalStateException("Body size doesn't match with content length. " +
+                        "Content-Length: " + length + ", bytes produced: " + bytesProduced);
+            }
 
-		@Override
-		public ByteBuf readChunk(ByteBufAllocator allocator) throws Exception {
-			if (isEndOfInput()) {
-				// This shouldn't happen, but just to guard
-				throw new IllegalStateException("No more data to produce from body producer");
-			}
-			ByteBuf chunk = nextChunk;
-			bytesProduced += chunk.readableBytes();
-			nextChunk = null;
-			return chunk;
-		}
+            return completed;
+        }
 
-		@Override
-		public long length() {
-			return length;
-		}
+        @Override
+        public void close() throws Exception {
+            // No-op. Calling of the BodyProducer.finish() is done via the channel future completion.
+        }
 
-		@Override
-		public long progress() {
-			return length >= 0 ? bytesProduced : 0;
-		}
-	}
+        @Override
+        public ByteBuf readChunk(ChannelHandlerContext ctx) throws Exception {
+            return readChunk(ctx.alloc());
+        }
+
+        @Override
+        public ByteBuf readChunk(ByteBufAllocator allocator) throws Exception {
+            if (isEndOfInput()) {
+                // This shouldn't happen, but just to guard
+                throw new IllegalStateException("No more data to produce from body producer");
+            }
+            ByteBuf chunk = nextChunk;
+            bytesProduced += chunk.readableBytes();
+            nextChunk = null;
+            return chunk;
+        }
+
+        @Override
+        public long length() {
+            return length;
+        }
+
+        @Override
+        public long progress() {
+            return length >= 0 ? bytesProduced : 0;
+        }
+    }
 }

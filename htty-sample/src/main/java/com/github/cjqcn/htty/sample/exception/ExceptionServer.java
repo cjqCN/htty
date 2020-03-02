@@ -9,7 +9,6 @@ import com.github.cjqcn.htty.core.worker.HttyWorker;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 /**
- * @description:
  * @author: chenjinquan
  * @create: 2018-09-14 17:20
  **/
@@ -18,7 +17,7 @@ public class ExceptionServer {
 	public static void main(String[] args) throws Exception {
 		HttyServerBuilder.builder("ExceptionServer")
 				.setPort(8082)
-				.addHttyHandler(new ExceptionWorker())
+				.addHandler(new ExceptionWorker())
 				.setExceptionHandler(new MyExceptionHandler())
 				.build().start();
 	}
@@ -31,7 +30,7 @@ public class ExceptionServer {
 
 		@Override
 		public HttyMethod[] httpMethod() {
-			return HttyMethod.ALL_HTTP_METHOD;
+			return HttyMethod.getAllHttpMethod();
 		}
 
 		@Override

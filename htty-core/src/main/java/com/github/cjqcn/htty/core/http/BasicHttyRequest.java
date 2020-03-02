@@ -17,17 +17,16 @@ public class BasicHttyRequest implements HttyRequest {
 
     private final FullHttpRequest fullHttpRequest;
 
+    private volatile boolean decodeCookie = false;
+    private volatile boolean decodeHeader = false;
+    private volatile boolean decodeParam = false;
+
     private volatile HttyCookie[] cookies;
-
     private volatile Map<String, String> headers;
-
     private volatile Map<String, String> params;
 
     public BasicHttyRequest(FullHttpRequest fullHttpRequest) {
         this.fullHttpRequest = fullHttpRequest;
-        cookies = null;
-        headers = null;
-        params = null;
     }
 
     @Override
@@ -50,7 +49,7 @@ public class BasicHttyRequest implements HttyRequest {
         if (fullHttpRequest.method() == HttpMethod.OPTIONS) {
             return HttyMethod.OPTIONS;
         }
-        throw new UnsupportedOperationException("不支持该方法:" + fullHttpRequest.method().name());
+        throw new UnsupportedOperationException("Unsupported:" + fullHttpRequest.method().name());
     }
 
     @Override
@@ -60,34 +59,33 @@ public class BasicHttyRequest implements HttyRequest {
 
 
     @Override
-    public Map<String, String> headers() {
-        if (headers == null) {
-            Set<String> names = fullHttpRequest.headers().names();
-            headers = new HashMap<>(names.size());
-            names.forEach(x -> {
-                headers.put(x, fullHttpRequest.headers().get(x));
-            });
+    public synchronized Map<String, String> headers() {
+        if (decodeHeader == false) {
+            decodeHeader();
+            decodeHeader = true;
         }
         return headers;
     }
 
     @Override
     public String header(String name) {
-        return fullHttpRequest.headers().get(name);
+        return headers().get(name);
     }
 
     @Override
-    public HttyCookie[] cookies() {
-        if (!isDecodeCookie()) {
+    public synchronized HttyCookie[] cookies() {
+        if (decodeCookie == false) {
             decodeCookie();
+            decodeCookie = true;
         }
         return cookies;
     }
 
     @Override
-    public Map<String, String> params() {
-        if (!isDecodeParam()) {
+    public synchronized Map<String, String> params() {
+        if (decodeParam == false) {
             decodeParam();
+            decodeParam = true;
         }
         return params;
     }
@@ -109,6 +107,15 @@ public class BasicHttyRequest implements HttyRequest {
         cookies = CookieBuilder.create(cookieSet);
     }
 
+    private void decodeHeader() {
+        Set<String> names = fullHttpRequest.headers().names();
+        headers = new HashMap<>(names.size());
+        names.forEach(x -> {
+            headers.put(x, fullHttpRequest.headers().get(x));
+        });
+    }
+
+
     private void decodeParam() {
         QueryStringDecoder queryStringDecoder;
         try {
@@ -123,15 +130,6 @@ public class BasicHttyRequest implements HttyRequest {
             params = new HashMap<>(tmp.size());
             tmp.forEach((k, v) -> params.put(k, v.get(0)));
         }
-    }
-
-    private boolean isDecodeCookie() {
-        return cookies != null;
-    }
-
-
-    private boolean isDecodeParam() {
-        return params != null;
     }
 
 
