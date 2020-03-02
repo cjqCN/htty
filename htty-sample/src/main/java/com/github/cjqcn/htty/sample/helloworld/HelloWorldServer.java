@@ -25,7 +25,6 @@ public class HelloWorldServer {
 	static class HelloWorldHandler implements HttyWorker {
 		@Override
 		public void handle(HttyRequest httyRequest, HttyResponse httyResponse) {
-			System.out.println(httyRequest.params());
 			httyResponse.sendString(OK, "hello world");
 		}
 
