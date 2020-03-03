@@ -16,6 +16,8 @@ import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.github.cjqcn.htty.core.common.Version.VERSION;
+
 /**
  * Basic implementation of {@link HttyResponse} that uses {@link Channel} to write back to client.
  */
@@ -26,7 +28,10 @@ public final class BasicHttyResponse extends AbstractHttyResponse {
     private final Channel channel;
     private final AtomicBoolean responded;
     private final boolean sslEnabled;
-    private HttpHeaders httpHeaders = EmptyHttpHeaders.INSTANCE;
+    private final HttpHeaders DEFAULT_HEADERS = new DefaultHttpHeaders()
+            .add("Connection", "Keep-Alive")
+            .add("Server", "htty/" + VERSION);
+    private HttpHeaders httpHeaders = DEFAULT_HEADERS;
 
     public BasicHttyResponse(Channel channel, boolean sslEnabled) {
         this.channel = channel;
@@ -36,18 +41,20 @@ public final class BasicHttyResponse extends AbstractHttyResponse {
 
     @Override
     public synchronized HttpHeaders getHeaders() {
-        if (httpHeaders == EmptyHttpHeaders.INSTANCE) {
-            httpHeaders = new DefaultHttpHeaders();
-        }
+        optHeaders();
         return httpHeaders;
     }
 
     @Override
     public synchronized void addHeader(HttpHeaders headers) {
-        if (httpHeaders == EmptyHttpHeaders.INSTANCE) {
-            httpHeaders = new DefaultHttpHeaders();
-        }
+        optHeaders();
         httpHeaders.add(headers);
+    }
+
+    private void optHeaders() {
+        if (httpHeaders == DEFAULT_HEADERS) {
+            httpHeaders = new DefaultHttpHeaders().add(DEFAULT_HEADERS);
+        }
     }
 
     @Override
