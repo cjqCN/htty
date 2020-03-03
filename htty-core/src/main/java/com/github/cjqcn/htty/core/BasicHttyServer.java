@@ -23,6 +23,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpContentCompressor;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.HttpServerKeepAliveHandler;
 import io.netty.handler.codec.http.cors.CorsConfig;
 import io.netty.handler.codec.http.cors.CorsHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
@@ -51,6 +52,7 @@ class BasicHttyServer implements HttyServer {
     private final static String HTTP_AGGREGATOR_CODEC_HANDLER = "HttpObjectAggregator";
     private final static String CORS_HANDLER = "cors";
     private final static String CONTENT_COMPRESSOR_HANDLER = "compressor";
+    private final static String KEEP_ALIVE_HANDLER = "keep_alive";
     private final static String HTTP_HANDLER = "httpWorker";
     private final static String CHUNKED_WRITE_HANDLER = "chunkedWriter";
 
@@ -131,36 +133,6 @@ class BasicHttyServer implements HttyServer {
 
     @Override
     public synchronized void start() throws Exception {
-        if (state == State.ALREADY) {
-            try {
-                long start = System.currentTimeMillis();
-                LOG.info("Starting HTTP Service {} at address {}", serverName, bindAddress);
-                channelGroup = new DefaultChannelGroup(ImmediateEventExecutor.INSTANCE);
-                bootstrap = createBootstrap(channelGroup);
-                Channel serverChannel = bootstrap.bind(bindAddress).sync().channel();
-                channelGroup.add(serverChannel);
-
-                bindAddress = (InetSocketAddress) serverChannel.localAddress();
-
-                long end = System.currentTimeMillis();
-                LOG.info("Started HTTP Service {} at address {}, cost:{}ms", serverName, bindAddress, end - start);
-                state = State.RUNNING;
-                //sync
-                serverChannel.closeFuture().sync();
-            } catch (Throwable t) {
-                // Release resources if there is any failure
-                channelGroup.close().awaitUninterruptibly();
-                try {
-                    if (bootstrap != null) {
-                        shutdownExecutorGroups(0, 5, TimeUnit.SECONDS, bossGroup, workerGroup, businessGroup);
-                    }
-                } catch (Throwable t2) {
-                    t.addSuppressed(t2);
-                }
-                state = State.FAILED;
-                throw t;
-            }
-        }
         if (state == State.RUNNING) {
             LOG.info("Ignore start() call on HTTP service {} since it has already been started.", serverName);
             return;
@@ -172,6 +144,32 @@ class BasicHttyServer implements HttyServer {
         if (state == State.FAILED) {
             throw new IllegalStateException("Cannot start the HTTP service "
                     + serverName + " because it was failed earlier");
+        }
+        try {
+            long start = System.currentTimeMillis();
+            LOG.info("Starting HTTP Service {} at address {}", serverName, bindAddress);
+            channelGroup = new DefaultChannelGroup(ImmediateEventExecutor.INSTANCE);
+            bootstrap = createBootstrap(channelGroup);
+            Channel serverChannel = bootstrap.bind(bindAddress).sync().channel();
+            channelGroup.add(serverChannel);
+
+            bindAddress = (InetSocketAddress) serverChannel.localAddress();
+
+            long end = System.currentTimeMillis();
+            LOG.info("Started HTTP Service {} at address {}, cost:{}ms", serverName, bindAddress, end - start);
+            state = State.RUNNING;
+        } catch (Throwable t) {
+            // Release resources if there is any failure
+            channelGroup.close().awaitUninterruptibly();
+            try {
+                if (bootstrap != null) {
+                    shutdownExecutorGroups(0, 5, TimeUnit.SECONDS, bossGroup, workerGroup, businessGroup);
+                }
+            } catch (Throwable t2) {
+                t.addSuppressed(t2);
+            }
+            state = State.FAILED;
+            throw t;
         }
     }
 
@@ -250,6 +248,8 @@ class BasicHttyServer implements HttyServer {
                         }
                         pipeline.addLast(CONTENT_COMPRESSOR_HANDLER, new HttpContentCompressor());
                         pipeline.addLast(CHUNKED_WRITE_HANDLER, new ChunkedWriteHandler());
+                        pipeline.addLast(KEEP_ALIVE_HANDLER, new HttpServerKeepAliveHandler());
+
                         if (businessGroup == null) {
                             pipeline.addLast(HTTP_HANDLER, httyHttpHandler);
                         } else {
