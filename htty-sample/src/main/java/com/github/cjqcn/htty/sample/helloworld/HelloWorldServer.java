@@ -1,6 +1,5 @@
 package com.github.cjqcn.htty.sample.helloworld;
 
-import com.github.cjqcn.htty.core.HttyServer;
 import com.github.cjqcn.htty.core.HttyServerBuilder;
 import com.github.cjqcn.htty.core.http.HttyMethod;
 import com.github.cjqcn.htty.core.http.HttyRequest;
@@ -19,6 +18,7 @@ public class HelloWorldServer {
 		HttyServerBuilder.builder("HelloWorldServer")
 				.setPort(8080)
 				.addHandler(new HelloWorldHandler())
+				.setBusinessThreadPoolSize(200)
 				.build().start();
 	}
 

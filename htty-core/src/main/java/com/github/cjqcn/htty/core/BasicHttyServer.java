@@ -216,7 +216,7 @@ class BasicHttyServer implements HttyServer {
         if (businessThreadPoolSize > 0) {
             _businessGroup = new NioEventLoopGroup(businessThreadPoolSize,
                     createThreadFactory(serverName + "-business-thread-%d", priority));
-            LOG.info("Init businessGroup, size:{}", workerGroup.executorCount());
+            LOG.info("Init businessGroup, size:{}", _businessGroup.executorCount());
         }
         businessGroup = _businessGroup;
 
