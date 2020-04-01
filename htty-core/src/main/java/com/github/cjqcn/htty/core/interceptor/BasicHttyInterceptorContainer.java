@@ -6,11 +6,13 @@ import com.github.cjqcn.htty.core.http.HttyRequest;
 import com.github.cjqcn.htty.core.http.HttyResponse;
 import com.github.cjqcn.htty.core.interceptor.adapter.HttyInterceptorAdapter;
 import com.github.cjqcn.htty.core.interceptor.adapter.HttyInterceptorAdapterBuilder;
-import com.github.cjqcn.htty.core.interceptor.internal.KeepAliveInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
 
 public class BasicHttyInterceptorContainer implements HttyInterceptorContainer {
 
@@ -103,6 +105,5 @@ public class BasicHttyInterceptorContainer implements HttyInterceptorContainer {
 
 
     private void addInternalInterceptor() {
-        addInterceptor(Arrays.asList(new KeepAliveInterceptor()));
     }
 }
